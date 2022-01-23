@@ -5,6 +5,8 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 from pages import (
     overview,
+    marketOverview,
+    predictionCharts,
     pricePerformance,
     portfolioManagement,
     feesMins,
@@ -26,8 +28,8 @@ app.layout = html.Div(
 # Update page
 @app.callback(Output("page-content", "children"), [Input("url", "pathname")])
 def display_page(pathname):
-    if pathname == "/dash-financial-report/price-performance":
-        return pricePerformance.create_layout(app)
+    if pathname == "/dash-financial-report/prediction-charts":
+        return predictionCharts.create_layout(app)
     elif pathname == "/dash-financial-report/portfolio-management":
         return portfolioManagement.create_layout(app)
     elif pathname == "/dash-financial-report/fees":
@@ -38,6 +40,8 @@ def display_page(pathname):
         return newsReviews.create_layout(app)
     elif pathname == "/dash-financial-report/full-view":
         return (
+            marketOverview.create_layout(app),
+            predictionCharts.create_layout(app),
             overview.create_layout(app),
             pricePerformance.create_layout(app),
             portfolioManagement.create_layout(app),
@@ -46,7 +50,8 @@ def display_page(pathname):
             newsReviews.create_layout(app),
         )
     else:
-        return overview.create_layout(app)
+        return marketOverview.create_layout(app)
+
 
 
 if __name__ == "__main__":
