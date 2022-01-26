@@ -22,7 +22,7 @@ server = app.server
 
 # Describe the layout/ UI of the app
 app.layout = html.Div(
-    [dcc.Location(id="url", refresh=False), html.Div(id="page-content")]
+    [dcc.Location(id="url", refresh=True), html.Div(id="page-content")]
 )
 
 # Update page

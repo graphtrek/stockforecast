@@ -20,12 +20,12 @@ DATA_PATH = PATH.joinpath("../data").resolve()
 #df_after_tax = pd.read_csv(DATA_PATH.joinpath("df_after_tax.csv"))
 #df_recent_returns = pd.read_csv(DATA_PATH.joinpath("df_recent_returns.csv"))
 
-
 df_vix_graph = get_stock_price(yf.Ticker('^VIX'),"2018-01-01")
 df_tnx_graph = get_stock_price(yf.Ticker('^TNX'),"2018-01-01")
 df_qqq_graph = get_stock_price(yf.Ticker('QQQ'),"2018-01-01")
 df_spy_graph = get_stock_price(yf.Ticker('SPY'),"2018-01-01")
 df_tsla_graph = get_stock_price(yf.Ticker('TSLA'),"2018-01-01")
+
 
 def get_title(name,df):
     last_day_df = df.iloc[-1:]
@@ -127,6 +127,12 @@ def display_chart(df):
 
 
 def create_layout(app):
+    #df_vix_graph = get_stock_price(yf.Ticker('^VIX'),"2018-01-01")
+    #df_tnx_graph = get_stock_price(yf.Ticker('^TNX'),"2018-01-01")
+    #df_qqq_graph = get_stock_price(yf.Ticker('QQQ'),"2018-01-01")
+    #df_spy_graph = get_stock_price(yf.Ticker('SPY'),"2018-01-01")
+    #df_tsla_graph = get_stock_price(yf.Ticker('TSLA'),"2018-01-01")
+
     return html.Div(
         [
             Header(app),
