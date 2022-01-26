@@ -1,10 +1,12 @@
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import dcc
+from dash import html
 import yfinance as yf
 
 from ta.trend import MACD
 from ta.momentum import StochasticOscillator
 from ta.momentum import RSIIndicator
+import numpy as np
+import plotly.graph_objs as go
 
 import pandas as pd
 
@@ -49,7 +51,7 @@ def get_header(app):
                         [
                             dcc.Link(
                                 "Full View",
-                                href="/dash-financial-report/full-view",
+                                href="/dash-graphtrek-technical-analyzer/full-view",
                                 className="full-view-link",
                             )
                         ],
@@ -70,32 +72,14 @@ def get_menu():
         [
             dcc.Link(
                 "Overview",
-                href="/dash-financial-report/marketOverview",
+                href="/dash-graphtrek-technical-analyzer/page1",
                 className="tab first",
             ),
             dcc.Link(
                 "Prediction",
-                href="/dash-financial-report/prediction-charts",
+                href="/dash-graphtrek-technical-analyzer/page2",
                 className="tab",
-            ),
-            dcc.Link(
-                "Portfolio & Management",
-                href="/dash-financial-report/portfolio-management",
-                className="tab",
-            ),
-            dcc.Link(
-                "Fees & Minimums", href="/dash-financial-report/fees", className="tab"
-            ),
-            dcc.Link(
-                "Distributions",
-                href="/dash-financial-report/distributions",
-                className="tab",
-            ),
-            dcc.Link(
-                "News & Reviews",
-                href="/dash-financial-report/news-and-reviews",
-                className="tab",
-            ),
+            )
         ],
         className="row all-tabs",
     )
@@ -128,7 +112,8 @@ def indicators(df):
     rsi = RSIIndicator(close=df['Close'], window=14)
     return macd, stoch, rsi
 
-def get_stock_price(ticker, from_date):
+def get_stock_price(ticker_name, from_date):
+    ticker = yf.Ticker(ticker_name)
     df = yf.download(ticker.ticker, start=from_date, interval="1d")
     #df = df.rename(columns={"Close": "Close1", "Adj Close": "Close"})
 
@@ -154,3 +139,101 @@ def get_stock_price(ticker, from_date):
     df.to_csv('/home/nexys/graphtrek/stock/' + ticker.ticker + '.csv', index=False)
     print('Get Stock Price', ticker.ticker, 'done.')
     return df
+
+def get_title(name, df):
+    last_day_df = df.iloc[-1:]
+    last_date = last_day_df['Date'].dt.strftime('%Y-%m-%d')
+    close_price = np.round(float(df.iloc[-1:]['Close']), 1)
+
+    ath = np.round(float(df['Close'].max()))
+    discount = np.round(ath - close_price, 1)
+    discount_percent = np.round((discount / close_price) * 100, 1)
+    title = name + " " + last_date + " Last Price:" + str(close_price) + "$ " + " ATH:" + str(
+        ath) + "$ Discount:" + str(discount) + "$ (" + str(discount_percent) + "%)"
+
+    return title
+
+
+def display_chart(df):
+    fig = go.Figure(go.Scatter(
+        x=df["Date"],
+        y=df["Close"],
+        line={"color": "#97151c"},
+        mode="lines"
+    ))
+    start_date = "2021-06-01"
+    end_date = "2022-01-31"
+    # zoom_df = chart_df.iloc['Date' >= start_date]
+
+    zoom_df = df[df.Date >= start_date]
+    y_zoom_max = zoom_df["High"].max()
+    y_zoom_min = zoom_df["Low"].min()
+
+    fig.update_layout(
+        autosize=True,
+        #        width=700,
+        height=200,
+        font={"family": "Raleway", "size": 10},
+        margin={
+            "r": 30,
+            "t": 30,
+            "b": 30,
+            "l": 30,
+        },
+        showlegend=False,
+        dragmode='pan',
+        titlefont={
+            "family": "Raleway",
+            "size": 10,
+        },
+        xaxis={
+            #            "autorange": True,
+            "range": [
+                start_date,
+                end_date
+            ],
+            "rangeselector": {
+                "buttons": [
+                    {
+                        "count": 1,
+                        "label": "1M",
+                        "step": "month",
+                        "stepmode": "backward"
+                    },
+                    {
+                        "count": 3,
+                        "label": "3M",
+                        "step": "month",
+                        "stepmode": "backward"
+
+                    },
+                    {
+                        "count": 6,
+                        "label": "6M",
+                        "step": "month",
+                        "stepmode": "backward"
+                    },
+                    {
+                        "count": 1,
+                        "label": "1Y",
+                        "step": "year",
+                        "stepmode": "backward",
+                    },
+                    {
+                        "label": "All",
+                        "step": "all",
+                    },
+                ]
+            },
+            "showline": True,
+            "type": "date",
+            "zeroline": False
+        }
+    )
+
+    fig.update_layout(xaxis_rangeslider_visible=False)
+    #    fig.update_xaxes(type="date", range=[start_date, end_date])
+    fig.update_yaxes(range=[y_zoom_min, y_zoom_max])
+    fig.update_yaxes(showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')
+    fig.update_xaxes(showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')
+    return fig

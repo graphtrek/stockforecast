@@ -4,19 +4,20 @@ from dash.dependencies import Input, Output
 
 from app import app
 
-layout = html.Div([
-    html.H3('Page 1'),
-    dcc.Dropdown(
-        id='page1-dropdown',
-        options=[
-            {'label': 'Page 1 - {}'.format(i), 'value': i} for i in [
-                'NYC', 'MTL', 'LA'
-            ]
-        ]
-    ),
-    html.Div(id='page1-display-value'),
-    dcc.Link('Go to Page 2', href='/page2')
-])
+def serve_layout():
+    return html.Div([
+            html.H3('Page 1'),
+            dcc.Dropdown(
+                id='page1-dropdown',
+                options=[
+                    {'label': 'Page 1 - {}'.format(i), 'value': i} for i in [
+                        'NYC', 'MTL', 'LA'
+                    ]
+                ]
+            ),
+            html.Div(id='page1-display-value'),
+            dcc.Link('Go to Page 2', href='/page2')
+        ])
 
 
 @app.callback(
