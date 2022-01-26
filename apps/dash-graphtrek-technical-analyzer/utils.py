@@ -229,10 +229,10 @@ def get_title(name, df):
     ath = np.round(float(df['Close'].max()))
     discount = np.round(ath - close_price, 1)
     discount_percent = np.round((discount / close_price) * 100, 1)
-    title = name + " " + last_date + " Last Price:" + str(close_price) + "$ " + " ATH:" + str(
-        ath) + "$ Discount:" + str(discount) + "$ (" + str(discount_percent) + "%)"
 
-    return title
+    title = name + " " + last_date + " Last Price:" + str(close_price) + "$ " + " Highest:" + str(ath) + "$ Discount:" + str(discount) + "$ (" + str(discount_percent) + "%)"
+
+    return html.A(title, href='https://in.tradingview.com/chart/66XmQfYy/?symbol=' + name, target="_blank")
 
 
 def display_chart(df):
