@@ -23,7 +23,7 @@ symbols += ['TDOC','TEN','TGT','TLT','TTD','UAA',
             'VALE','WMT','WYNN','ZM']
 
 symbols += ['PENN','QCOM','LCID','AAL']
-
+symbols.sort()
 layout = html.Div(
         [
             Header(app),
@@ -81,7 +81,7 @@ def display_value(symbol):
         symbol = "TSLA"
     df_vix_graph = get_stock_price("^VIX", "2021-01-01")
     df_qqq_graph = get_stock_price("QQQ", "2021-01-01")
-    df_xxx_graph = get_stock_price(symbol, "2021-01-01")
+    df_xxx_graph = get_stock_price(symbol, "2020-01-01")
     qqq_div = html.Div(
         [
             html.H6(get_title("QQQ", df_qqq_graph), className="subtitle padded"),

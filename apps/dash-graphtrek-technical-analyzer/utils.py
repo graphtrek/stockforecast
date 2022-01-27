@@ -183,7 +183,7 @@ def get_stock_price(ticker_name, from_date):
     df['MACD_DIFF'] = macd.macd_diff().to_numpy()
     df['MACD'] = macd.macd().to_numpy()
     df['MACD_SIGNAL'] = macd.macd_signal().to_numpy()
-    df.to_csv('/home/nexys/graphtrek/stock/' + ticker.ticker + '.csv', index=False)
+    #df.to_csv('/home/nexys/graphtrek/stock/' + ticker.ticker + '.csv', index=False)
     print('Get Stock Price', ticker.ticker, 'done.')
     return df
 
