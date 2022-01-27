@@ -7,7 +7,7 @@ from ta.momentum import StochasticOscillator
 from ta.momentum import RSIIndicator
 import numpy as np
 import plotly.graph_objs as go
-
+from plotly.subplots import make_subplots
 import pandas as pd
 
 from datetime import date
@@ -319,13 +319,24 @@ def display_chart(df):
 
 
 def display_analyzer(symbol,df):
-    fig = go.Figure(go.Candlestick(x=df['Date'],
+
+    fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
+                        vertical_spacing=0.012,
+                        row_heights=[0.60, 0.10, 0.30],
+                        specs=[
+                            [{"type": "candlestick"}],
+                            [{"type": "bar"}],
+                            [{"type": "scatter"}]
+                        ])
+
+
+    fig.add_trace(go.Candlestick(x=df['Date'],
                                    open=df['Open'],
                                    high=df['High'],
                                    low=df['Low'],
                                    close=df['Close'],
                                    name=symbol,
-                                   showlegend=True))
+                                   showlegend=True),row=1, col=1)
     # zoom_df = df.iloc['Date' >= start_date]
 
     zoom_df = df[df.Date >= start_date]
@@ -335,7 +346,7 @@ def display_analyzer(symbol,df):
     fig.update_layout(
         autosize=True,
         #        width=700,
-        height=400,
+        height=800,
         font={"family": "Raleway", "size": 10},
         margin={
             "r": 30,
@@ -400,29 +411,29 @@ def display_analyzer(symbol,df):
                              line=dict(color='lightgreen', width=2),
                              fill=None,
                              mode='lines',
-                             name='MA 20'))
+                             name='MA 20'),row=1,col=1)
     fig.add_trace(go.Scatter(x=df['Date'],
                              y=df['EMA21'],
                              fill='tonexty',
                              mode='lines',
                              line=dict(color='green', width=2),
-                             name='EMA 21'))
+                             name='EMA 21'),row=1,col=1)
     fig.add_trace(go.Scatter(x=df['Date'],
                              y=df['MA50'],
                              line=dict(color='blue', width=2),
-                             name='MA 50'))
+                             name='MA 50'),row=1,col=1)
     fig.add_trace(go.Scatter(x=df['Date'],
                              y=df['MA100'],
                              line=dict(color='orange', width=2),
-                             name='MA 100'))
+                             name='MA 100'),row=1,col=1)
     fig.add_trace(go.Scatter(x=df['Date'],
                              y=df['MA200'],
                              line=dict(color='red', width=2),
-                             name='MA 200'))
+                             name='MA 200'),row=1,col=1)
     fig.add_trace(go.Scatter(x=df['Date'],
                              y=df['MA300'],
                              line=dict(color='black', width=2),
-                             name='MA 300'))
+                             name='MA 300'),row=1,col=1)
 
     levels, close_price, min_level, max_level = calculate_levels(df)
 
@@ -455,11 +466,62 @@ def display_analyzer(symbol,df):
             text=['', '$' + str(np.round(current_level, 1)) + ' (' + str(np.round(percent, 1)) + '% disc:' + str(np.round(ath_percent, 1)) + '%)', ''],
             textposition="top right",
             line=dict(shape='linear', color=line_color, dash='dash', width=1)
-        ))
+        ), row=1, col=1)
+
+    # Volume
+    colors = ['green' if row['Open'] - row['Close'] >= 0 else 'red' for index, row in df.iterrows()]
+    fig.add_trace(go.Bar(x=df['Date'], y=df['Volume'], marker_color=colors, name='Volume'), row=2, col=1)
+
+    # RSI
+    fig.add_trace(go.Scatter(x=df['Date'],
+                             y=df['RSI'],
+                             line=dict(color='royalblue', width=2),
+                             name='RSI(14)'
+                             ), row=3, col=1)
+
+    indicators_test_prediction_df = pd.read_csv("/home/nexys/graphtrek/stock/" + symbol + "_test_prediction.csv")
+    indicators_prediction_df = pd.read_csv("/home/nexys/graphtrek/stock/" + symbol + "_prediction.csv")
+
+    if indicators_prediction_df is not None and indicators_prediction_df is not None:
+        fig.add_trace(go.Scatter(x=indicators_test_prediction_df['Date'],
+                                 y=indicators_test_prediction_df['Prediction'],
+                                 line=dict(color='firebrick', width=3, dash='dash'),
+                                 name='RSI(14) Test Predict'
+                                 ), row=3, col=1)
+
+        fig.add_trace(go.Scatter(x=indicators_prediction_df['Date'],
+                                 y = indicators_prediction_df['Prediction'],
+                                 line=dict(color='firebrick', width=3, dash='dot'),
+                                 name='RSI(14) Future Predict'
+                                 ), row=3, col=1)
+
+    fig.add_trace(go.Scatter(
+        x=[np.min(df['Date']), np.max(df['Date'])],
+        y=[30, 30],
+        mode="lines",
+        line=dict(shape = 'linear', color = 'rgb(10, 120, 24)', dash = 'dash'),
+        name='RSI(14) over sold'
+    ), row=3, col=1)
+
+    fig.add_trace(go.Scatter(
+        x=[np.min(df['Date']), np.max(df['Date'])],
+        y=[50, 50],
+        mode="lines",
+        line=dict(shape='linear', color='rgb(10, 12, 240)', dash='dash'),
+        name='RSI(14) Neutral'
+    ),row=3, col=1)
+
+    fig.add_trace(go.Scatter(
+        x=[np.min(df['Date']), np.max(df['Date'])],
+        y = [70, 70],
+        mode = "lines",
+        line = dict(shape = 'linear', color = 'rgb(100, 10, 100)', dash = 'dash'),
+        name='RSI(14) over bought'
+    ),row=3, col=1)
 
     fig.update_layout(xaxis_rangeslider_visible=False)
     #    fig.update_xaxes(type="date", range=[start_date, end_date])
-    fig.update_yaxes(range=[y_zoom_min, y_zoom_max])
+    fig.update_yaxes(range=[y_zoom_min, y_zoom_max], row=1, col=1)
     fig.update_yaxes(showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')
     fig.update_xaxes(showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')
     return fig
