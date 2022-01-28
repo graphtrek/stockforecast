@@ -10,8 +10,9 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import pandas as pd
 
-from datetime import date
+from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
+import os.path
 
 six_months = date.today() + relativedelta(months=-6)
 one_month = date.today() + relativedelta(months=+1)
@@ -19,9 +20,10 @@ one_month = date.today() + relativedelta(months=+1)
 start_date = six_months.strftime("%Y-%m-%d")
 end_date = one_month.strftime("%Y-%m-%d")
 
+
 def Header(app):
     return html.Div([get_header(app)])
-    #return html.Div([get_header(app), html.Br([]), get_menu()])
+    # return html.Div([get_header(app), html.Br([]), get_menu()])
 
 
 def get_header(app):
@@ -57,16 +59,16 @@ def get_header(app):
                         [html.H5("Graphtrek Technical Analyzer")],
                         className="seven columns main-title",
                     ),
-                    # html.Div(
-                    #     [
-                    #         dcc.Link(
-                    #             "Full View",
-                    #             href="/dash-graphtrek-technical-analyzer/full-view",
-                    #             className="full-view-link",
-                    #         )
-                    #     ],
-                    #     className="five columns",
-                    # ),
+                    html.Div(
+                        [
+                            dcc.Link(
+                                "Reload",
+                                href="/dash-graphtrek-technical-analyzer",
+                                className="full-view-link",
+                            )
+                        ],
+                        className="five columns",
+                    ),
                 ],
                 className="twelve columns",
                 style={"padding-left": "0"},
@@ -99,11 +101,19 @@ def get_menu():
 def make_dash_table(df):
     """ Return a dash definition of an HTML table for a Pandas dataframe """
     table = []
-    for index, row in df.iterrows():
-        html_row = []
-        for i in range(len(row)):
-            html_row.append(html.Td([row[i]]))
-        table.append(html.Tr(html_row))
+    if df is not None and len(df) > 0:
+
+        df = df.rename(columns={'openInterest': 'O.I.', 'impliedVolatility': 'I.V.', 'expirationDate': 'EXP.DATE'}, inplace=False)
+        html_header_row = []
+        for header in np.array(df.columns):
+            html_header_row.append(html.Th([header.upper()]))
+        table.append(html.Tr(html_header_row))
+
+        for index, row in df.iterrows():
+            html_row = []
+            for i in range(len(row)):
+                html_row.append(html.Td([row[i]]))
+            table.append(html.Tr(html_row))
     return table
 
 
@@ -124,37 +134,37 @@ def indicators(df):
     return macd, stoch, rsi
 
 
-def is_support(df,i):
-    cond1 = df['Low'][i] < df['Low'][i-1]
-    cond2 = df['Low'][i] < df['Low'][i+1]
-    cond3 = df['Low'][i+1] < df['Low'][i+2]
-    cond4 = df['Low'][i-1] < df['Low'][i-2]
+def is_support(df, i):
+    cond1 = df['Low'][i] < df['Low'][i - 1]
+    cond2 = df['Low'][i] < df['Low'][i + 1]
+    cond3 = df['Low'][i + 1] < df['Low'][i + 2]
+    cond4 = df['Low'][i - 1] < df['Low'][i - 2]
     return (cond1 and cond2 and cond3 and cond4)
 
 
-def is_resistance(df,i):
-    cond1 = df['High'][i] > df['High'][i-1]
-    cond2 = df['High'][i] > df['High'][i+1]
-    cond3 = df['High'][i+1] > df['High'][i+2]
-    cond4 = df['High'][i-1] > df['High'][i-2]
+def is_resistance(df, i):
+    cond1 = df['High'][i] > df['High'][i - 1]
+    cond2 = df['High'][i] > df['High'][i + 1]
+    cond3 = df['High'][i + 1] > df['High'][i + 2]
+    cond4 = df['High'][i - 1] > df['High'][i - 2]
     return (cond1 and cond2 and cond3 and cond4)
 
 
 def is_far_from_level(value, levels, df):
-    ave =  np.mean(df['High'] - df['Low'])
+    ave = np.mean(df['High'] - df['Low'])
     return np.sum([abs(value - level) < ave for level in levels]) == 0
 
 
 def find_nearest_greater_than(searchVal, inputData):
     diff = inputData - searchVal
-    diff[diff<0] = np.inf
+    diff[diff < 0] = np.inf
     idx = diff.argmin()
     return inputData[idx]
 
 
 def find_nearest_less_than(searchVal, inputData):
     diff = inputData - searchVal
-    diff[diff>0] = -np.inf
+    diff[diff > 0] = -np.inf
     idx = diff.argmax()
     return inputData[idx]
 
@@ -162,17 +172,17 @@ def find_nearest_less_than(searchVal, inputData):
 def get_stock_price(ticker_name, from_date):
     ticker = yf.Ticker(ticker_name)
     df = yf.download(ticker.ticker, start=from_date, interval="1d")
-    #df = df.rename(columns={"Close": "Close1", "Adj Close": "Close"})
+    # df = df.rename(columns={"Close": "Close1", "Adj Close": "Close"})
 
-    #ticker = yf.Ticker(symbol)
+    # ticker = yf.Ticker(symbol)
 
-    #df = ticker.history(start=from_date, interval="1d")
-    #print(df.info())
+    # df = ticker.history(start=from_date, interval="1d")
+    # print(df.info())
     df['Date'] = pd.to_datetime(df.index)
-    #df['Date'] = df['Date'].apply(mpl_dates.date2num)
-    #df = df.loc[:,['Date', 'Open', 'High', 'Low', 'Close']]
+    # df['Date'] = df['Date'].apply(mpl_dates.date2num)
+    # df = df.loc[:,['Date', 'Open', 'High', 'Low', 'Close']]
     df['EMA21'] = df['Close'].ewm(span=21, adjust=False).mean()
-    df['MA20'] =  df['Close'].rolling(window=20).mean()
+    df['MA20'] = df['Close'].rolling(window=20).mean()
     df['MA50'] = df['Close'].rolling(window=50).mean()
     df['MA100'] = df['Close'].rolling(window=100).mean()
     df['MA200'] = df['Close'].rolling(window=200).mean()
@@ -183,7 +193,7 @@ def get_stock_price(ticker_name, from_date):
     df['MACD_DIFF'] = macd.macd_diff().to_numpy()
     df['MACD'] = macd.macd().to_numpy()
     df['MACD_SIGNAL'] = macd.macd_signal().to_numpy()
-    #df.to_csv('/home/nexys/graphtrek/stock/' + ticker.ticker + '.csv', index=False)
+    # df.to_csv('/home/nexys/graphtrek/stock/' + ticker.ticker + '.csv', index=False)
     print('Get Stock Price', ticker.ticker, 'done.')
     return df
 
@@ -191,17 +201,17 @@ def get_stock_price(ticker_name, from_date):
 def calculate_levels(chart_df):
     levels = []
     low = 0
-    high = np.round(chart_df['Close'].max(),1)
+    high = np.round(chart_df['Close'].max(), 1)
     last_day_df = chart_df[-1:]
     last_date = last_day_df['Date'].index[0].date()
-    close_price = np.round(last_day_df['Close'][0],1)
-    for i in range(2,len(chart_df)-2):
+    close_price = np.round(last_day_df['Close'][0], 1)
+    for i in range(2, len(chart_df) - 2):
         try:
-            if is_support(chart_df,i):
+            if is_support(chart_df, i):
                 low = chart_df['Low'][i]
             if is_far_from_level(low, levels, chart_df):
                 levels.append(low)
-            elif is_resistance(chart_df,i):
+            elif is_resistance(chart_df, i):
                 high = chart_df['High'][i]
             if is_far_from_level(high, levels, chart_df):
                 levels.append(high)
@@ -211,7 +221,7 @@ def calculate_levels(chart_df):
 
     min_level = np.round(find_nearest_less_than(close_price, levels), 1)
     if min_level > close_price:
-        min_level = np.round(close_price * 0.8,1)
+        min_level = np.round(close_price * 0.8, 1)
 
     max_level = np.round(find_nearest_greater_than(close_price, levels), 1)
     if max_level < close_price:
@@ -221,6 +231,85 @@ def calculate_levels(chart_df):
     return levels, close_price, min_level, max_level
 
 
+def find_level_option_interests(symbol,min_level,max_level, dte_min, dte_max):
+    file_path = "/home/nexys/graphtrek/stock/" + symbol + "_options.csv"
+    file_exists = os.path.exists(file_path)
+    if file_exists is True:
+        options_df = pd.read_csv(file_path)
+        options_df['impliedVolatility'] = np.round(options_df['impliedVolatility'],2)
+        options_df['percentChange'] = np.round(options_df['percentChange'],2)
+        #expirationDates = options_df['expirationDate'].unique()
+        #print(sorted(expirationDates))
+
+        #PUT_options_df = pd.DataFrame()
+        #CALL_options_df = pd.DataFrame()
+
+        #for key, value in options_df.items():
+        #  date = key
+        #  rsi = float(value.get('RSI'))
+        #  rsi_data.append([date,rsi])
+        #  print('PUT OPTIONS', 'CLOSE PRICE:',close_price, 'SUPPORT -15%:', np.round(min_level * 0.85,2), 'RESISTANCE +15%:', np.round(max_level * 1.15,2))
+        new_header = options_df.columns #grab the first row for the header
+        PUT_options_df = options_df.query('CALL == False and strike>' + str(min_level * 0.8) + ' and strike<' + str(max_level * 1.2) + ' and dte>' + str(dte_min) + ' and dte<' + str(dte_max))
+
+        put_max_openInterest_index = PUT_options_df["openInterest"].idxmax()
+        put_max_volume_index = PUT_options_df["volume"].idxmax()
+        PUT_options_to_return_df = PUT_options_df.loc[put_max_openInterest_index:put_max_openInterest_index]
+        PUT_options_to_return_df = PUT_options_to_return_df.append(PUT_options_df.loc[put_max_volume_index:put_max_volume_index])
+        PUT_options_to_return_df.columns = new_header #set the header row as the df header
+        PUT_options_to_return_df = PUT_options_to_return_df.drop(columns = ['contractSize', 'CALL', 'currency','change','percentChange', 'lastTradeDate', 'lastPrice', 'inTheMoney','contractSymbol'])
+
+        #  print(tabulate(PUT_options_to_return_df, headers = 'keys', tablefmt = 'psql'))
+
+        #  print('CALL OPTIONS', 'CLOSE PRICE:',close_price, 'SUPPORT -15%:', np.round(min_level * 0.85,2), 'RESISTANCE +15%:', np.round(max_level * 1.15,2))
+        CALL_options_df = options_df.query('CALL == True and strike>' + str(min_level * 0.5) + ' and strike<' + str(max_level * 1.5) + ' and dte>' + str(dte_min) + ' and dte<' + str(dte_max))
+        call_max_openInterest_index = CALL_options_df["openInterest"].idxmax()
+        call_max_volume_index = CALL_options_df["volume"].idxmax()
+        CALL_options_to_return_df = CALL_options_df.loc[call_max_openInterest_index:call_max_openInterest_index]
+        CALL_options_to_return_df = CALL_options_to_return_df.append(CALL_options_df.loc[call_max_volume_index:call_max_volume_index])
+        CALL_options_to_return_df.columns = new_header #set the header row as the df header
+        CALL_options_to_return_df = CALL_options_to_return_df.drop(columns = ['contractSize', 'CALL', 'currency', 'change','percentChange', 'lastTradeDate', 'lastPrice', 'inTheMoney','contractSymbol'])
+        #  print(call_max_openInterest_index,tabulate(CALL_options_to_return_df, headers = 'keys', tablefmt = 'psql'))
+
+        new_header = options_df.iloc[0] #grab the first row for the header
+        return PUT_options_to_return_df, CALL_options_to_return_df
+    return None, None
+
+
+def get_text(prefix, value, suffix):
+    if value is not None and value:
+        return prefix + str(value) + suffix
+    return ""
+
+
+def get_earnings(symbols):
+    symbols_df = pd.DataFrame(symbols, columns=['Symbol'])
+    earnings_list = []
+    for symbol in symbols_df["Symbol"]:
+        file_path = "/home/nexys/graphtrek/stock/" + symbol + "_calendar.csv"
+        file_exists = os.path.exists(file_path)
+        if file_exists is True:
+            calendar_df = pd.read_csv(file_path)
+            if calendar_df is not None:
+                try:
+                    earning_datetime_str = calendar_df.iloc[0][1]
+                    earning_date_str = earning_datetime_str[0:10]
+                    earning_date = datetime.strptime(earning_date_str, '%Y-%m-%d')
+                    days = earning_date - datetime.today()
+                    if days.days >= 0:
+                        earnings_list.append([earning_date_str, days.days])
+                    else:
+                        earnings_list.append(["", None])
+                except:
+                    earnings_list.append(["", None])
+            else:
+                earnings_list.append(["", None])
+        else:
+            earnings_list.append(["", None])
+    earnings_array = np.array(earnings_list)
+    symbols_df['Earning'], symbols_df['Day'] = earnings_array[:, 0], earnings_array[:, 1]
+    return symbols_df
+
 def get_title(name, df):
     last_day_df = df.iloc[-1:]
     last_date = last_day_df['Date'].dt.strftime('%Y-%m-%d')
@@ -228,9 +317,10 @@ def get_title(name, df):
 
     ath = np.round(float(df['Close'].max()))
     discount = np.round(ath - close_price, 1)
-    discount_percent = np.round((discount / close_price) * 100, 1)
+    discount_percent = np.round((discount / ath) * 100, 1)
 
-    title = name + " " + last_date + " Last Price:" + str(close_price) + "$ " + " Highest:" + str(ath) + "$ Discount:" + str(discount) + "$ (" + str(discount_percent) + "%)"
+    title = name + " " + last_date + " Last Price:" + str(close_price) + "$ " + " Highest:" + str(
+        ath) + "$ Discount:" + str(discount) + "$ (" + str(discount_percent) + "%)"
 
     return html.A(title, href='https://in.tradingview.com/chart/66XmQfYy/?symbol=' + name, target="_blank")
 
@@ -318,8 +408,7 @@ def display_chart(df):
     return fig
 
 
-def display_analyzer(symbol,df):
-
+def display_analyzer(symbol, df):
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
                         vertical_spacing=0.012,
                         row_heights=[0.60, 0.10, 0.30],
@@ -329,14 +418,13 @@ def display_analyzer(symbol,df):
                             [{"type": "scatter"}]
                         ])
 
-
     fig.add_trace(go.Candlestick(x=df['Date'],
-                                   open=df['Open'],
-                                   high=df['High'],
-                                   low=df['Low'],
-                                   close=df['Close'],
-                                   name=symbol,
-                                   showlegend=True),row=1, col=1)
+                                 open=df['Open'],
+                                 high=df['High'],
+                                 low=df['Low'],
+                                 close=df['Close'],
+                                 name=symbol,
+                                 showlegend=True), row=1, col=1)
     # zoom_df = df.iloc['Date' >= start_date]
 
     zoom_df = df[df.Date >= start_date]
@@ -411,62 +499,63 @@ def display_analyzer(symbol,df):
                              line=dict(color='lightgreen', width=2),
                              fill=None,
                              mode='lines',
-                             name='MA 20'),row=1,col=1)
+                             name='MA 20'), row=1, col=1)
     fig.add_trace(go.Scatter(x=df['Date'],
                              y=df['EMA21'],
                              fill='tonexty',
                              mode='lines',
                              line=dict(color='green', width=2),
-                             name='EMA 21'),row=1,col=1)
+                             name='EMA 21'), row=1, col=1)
     fig.add_trace(go.Scatter(x=df['Date'],
                              y=df['MA50'],
                              line=dict(color='blue', width=2),
-                             name='MA 50'),row=1,col=1)
+                             name='MA 50'), row=1, col=1)
     fig.add_trace(go.Scatter(x=df['Date'],
                              y=df['MA100'],
                              line=dict(color='orange', width=2),
-                             name='MA 100'),row=1,col=1)
+                             name='MA 100'), row=1, col=1)
     fig.add_trace(go.Scatter(x=df['Date'],
                              y=df['MA200'],
                              line=dict(color='red', width=2),
-                             name='MA 200'),row=1,col=1)
+                             name='MA 200'), row=1, col=1)
     fig.add_trace(go.Scatter(x=df['Date'],
                              y=df['MA300'],
                              line=dict(color='black', width=2),
-                             name='MA 300'),row=1,col=1)
+                             name='MA 300'), row=1, col=1)
 
     levels, close_price, min_level, max_level = calculate_levels(df)
 
     ath_percent = 0
-
-    for idx, level in enumerate(levels):
-        percent = 0
-        if idx == 0:
-            ath = level
-        current_level = level
-        if idx > 0:
-            prev_level = levels[idx-1]
-            diff = prev_level - current_level
-            ath_diff = ath - current_level
-            percent = (diff / current_level) * 100
-            ath_percent = (ath_diff / current_level) * 100
-        if level <= (min_level * 0.98) or level >= (max_level * 1.02):
-            line_color = 'rgba(100, 10, 100, 0.2)'
-            line_fill = None
-        else:
-            line_color = 'rgba(128,128,128,1)'
-            line_fill = 'tonexty'
-        fig.add_trace(go.Scatter(
-            x = [df['Date'].min(), df['Date'].max()],
-            y = [level, level],
-            mode="lines+text",
-            name="Lines and Text",
-            fill=line_fill,
-            showlegend=False,
-            text=['', '$' + str(np.round(current_level, 1)) + ' (' + str(np.round(percent, 1)) + '% disc:' + str(np.round(ath_percent, 1)) + '%)', ''],
-            textposition="top right",
-            line=dict(shape='linear', color=line_color, dash='dash', width=1)
-        ), row=1, col=1)
+    if levels is not None:
+        for idx, level in enumerate(levels):
+            percent = 0
+            if idx == 0:
+                ath = level
+            current_level = level
+            if idx > 0:
+                prev_level = levels[idx - 1]
+                diff = prev_level - current_level
+                ath_diff = ath - current_level
+                percent = (diff / current_level) * 100
+                ath_percent = (ath_diff / ath) * 100
+            if level <= (min_level * 0.98) or level >= (max_level * 1.02):
+                line_color = 'rgba(100, 10, 100, 0.2)'
+                line_fill = None
+            else:
+                line_color = 'rgba(128,128,128,1)'
+                line_fill = 'tonexty'
+            fig.add_trace(go.Scatter(
+                x=[df['Date'].min(), df['Date'].max()],
+                y=[level, level],
+                mode="lines+text",
+                name="Lines and Text",
+                fill=line_fill,
+                showlegend=False,
+                text=['', '$' + str(np.round(current_level, 1)) + ' (' + str(np.round(percent, 1)) + '% disc:' + str(
+                    np.round(ath_percent, 1)) + '%)', ''],
+                textposition="top right",
+                line=dict(shape='linear', color=line_color, dash='dash', width=1)
+            ), row=1, col=1)
 
     # Volume
     colors = ['green' if row['Open'] - row['Close'] >= 0 else 'red' for index, row in df.iterrows()]
@@ -490,16 +579,28 @@ def display_analyzer(symbol,df):
                                  ), row=3, col=1)
 
         fig.add_trace(go.Scatter(x=indicators_prediction_df['Date'],
-                                 y = indicators_prediction_df['Prediction'],
+                                 y=indicators_prediction_df['Prediction'],
                                  line=dict(color='firebrick', width=3, dash='dot'),
                                  name='RSI(14) Future Predict'
                                  ), row=3, col=1)
+
+        first_prediction = indicators_prediction_df['Prediction'][0]
+        mean_prediction = np.mean(indicators_prediction_df['Prediction'])
+        print("first_prediction:", first_prediction, "mean_prediction:", mean_prediction)
+
+        fig.add_trace(go.Scatter(
+            x=[np.min(indicators_prediction_df['Date']), np.max(indicators_prediction_df['Date'])],
+            y=[first_prediction, mean_prediction],
+            mode="lines",
+            line=dict(shape='linear', color='rgb(255, 153, 0)'),
+            name='RSI(14) mean prediction'
+        ), row=3, col=1)
 
     fig.add_trace(go.Scatter(
         x=[np.min(df['Date']), np.max(df['Date'])],
         y=[30, 30],
         mode="lines",
-        line=dict(shape = 'linear', color = 'rgb(10, 120, 24)', dash = 'dash'),
+        line=dict(shape='linear', color='rgb(10, 120, 24)', dash='dash'),
         name='RSI(14) over sold'
     ), row=3, col=1)
 
@@ -509,15 +610,15 @@ def display_analyzer(symbol,df):
         mode="lines",
         line=dict(shape='linear', color='rgb(10, 12, 240)', dash='dash'),
         name='RSI(14) Neutral'
-    ),row=3, col=1)
+    ), row=3, col=1)
 
     fig.add_trace(go.Scatter(
         x=[np.min(df['Date']), np.max(df['Date'])],
-        y = [70, 70],
-        mode = "lines",
-        line = dict(shape = 'linear', color = 'rgb(100, 10, 100)', dash = 'dash'),
+        y=[70, 70],
+        mode="lines",
+        line=dict(shape='linear', color='rgb(100, 10, 100)', dash='dash'),
         name='RSI(14) over bought'
-    ),row=3, col=1)
+    ), row=3, col=1)
 
     fig.update_layout(xaxis_rangeslider_visible=False)
     #    fig.update_xaxes(type="date", range=[start_date, end_date])
