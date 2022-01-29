@@ -83,6 +83,11 @@ p.padded {
   color: #8496b8;
 }
 
+.oi-max-text {
+  color: #a83232;
+  font-weight: bold;
+}
+
 table {
   width: 100%;
 }

@@ -139,20 +139,20 @@ def display_value(symbol):
 
     qqq_div = html.Div(
         [
-            html.H6(get_title("QQQ", df_qqq_graph), className="subtitle padded"),
+#            html.H6(get_title("QQQ", df_qqq_graph), className="subtitle padded"),
             dcc.Graph(
                 id="graph-qqq",
-                figure=display_chart(df_qqq_graph),
+                figure=display_chart("QQQ",df_qqq_graph),
                 config={"displayModeBar": False},
             )
         ]
     )
 
     vix_div = html.Div([
-        html.H6(get_title("VIX", df_vix_graph), className="subtitle padded"),
+#        html.H6(get_title("VIX", df_vix_graph), className="subtitle padded"),
         dcc.Graph(
             id="graph-vix",
-            figure=display_chart(df_vix_graph),
+            figure=display_chart("VIX",df_vix_graph),
             config={"displayModeBar": False},
         )
     ])
@@ -175,14 +175,17 @@ def display_value(symbol):
 
     put_options_df = pd.DataFrame()
     call_options_df = pd.DataFrame()
-    near_put_options_df, near_call_options_df = find_level_option_interests(symbol, min_level, max_level, -1, 33)
-    far_put_options_df, far_call_options_df = find_level_option_interests(symbol, min_level, max_level, 33, 365)
+    near_put_options_df, near_call_options_df = find_level_option_interests(symbol, min_level, max_level, 0, 45)
+    far_put_options_df, far_call_options_df = find_level_option_interests(symbol, min_level, max_level, 45, 365)
+
     put_options_df = put_options_df.append(near_put_options_df)
     put_options_df = put_options_df.append(far_put_options_df)
     put_options_df = put_options_df.sort_values(by=['dte'])
+
     call_options_df = call_options_df.append(near_call_options_df)
     call_options_df = call_options_df.append(far_call_options_df)
     call_options_df = call_options_df.sort_values(by=['dte'])
+
     calls_table = html.Table(make_dash_table(call_options_df))
     puts_table = html.Table(make_dash_table(put_options_df))
     return xxx_div, vix_div, qqq_div, calls_table, puts_table

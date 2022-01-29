@@ -14,10 +14,12 @@ from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 import os.path
 
+twelve_months = date.today() + relativedelta(months=-12)
+eleven_months = date.today() + relativedelta(months=-11)
 six_months = date.today() + relativedelta(months=-6)
 one_month = date.today() + relativedelta(months=+1)
 
-start_date = six_months.strftime("%Y-%m-%d")
+start_date = eleven_months.strftime("%Y-%m-%d")
 end_date = one_month.strftime("%Y-%m-%d")
 
 
@@ -108,12 +110,16 @@ def make_dash_table(df):
         for header in np.array(df.columns):
             html_header_row.append(html.Th([header.upper()]))
         table.append(html.Tr(html_header_row))
-
+        max_open_interest = df["O.I."].idxmax()
         for index, row in df.iterrows():
             html_row = []
             for i in range(len(row)):
                 html_row.append(html.Td([row[i]]))
-            table.append(html.Tr(html_row))
+
+            if index == max_open_interest:
+                table.append(html.Tr(html_row, className="oi-max-text"))
+            else:
+                table.append(html.Tr(html_row))
     return table
 
 
@@ -255,7 +261,8 @@ def find_level_option_interests(symbol,min_level,max_level, dte_min, dte_max):
         put_max_openInterest_index = PUT_options_df["openInterest"].idxmax()
         put_max_volume_index = PUT_options_df["volume"].idxmax()
         PUT_options_to_return_df = PUT_options_df.loc[put_max_openInterest_index:put_max_openInterest_index]
-        PUT_options_to_return_df = PUT_options_to_return_df.append(PUT_options_df.loc[put_max_volume_index:put_max_volume_index])
+        if put_max_volume_index != put_max_openInterest_index:
+            PUT_options_to_return_df = PUT_options_to_return_df.append(PUT_options_df.loc[put_max_volume_index:put_max_volume_index])
         PUT_options_to_return_df.columns = new_header #set the header row as the df header
         PUT_options_to_return_df = PUT_options_to_return_df.drop(columns = ['contractSize', 'CALL', 'currency','change','percentChange', 'lastTradeDate', 'lastPrice', 'inTheMoney','contractSymbol'])
 
@@ -266,12 +273,10 @@ def find_level_option_interests(symbol,min_level,max_level, dte_min, dte_max):
         call_max_openInterest_index = CALL_options_df["openInterest"].idxmax()
         call_max_volume_index = CALL_options_df["volume"].idxmax()
         CALL_options_to_return_df = CALL_options_df.loc[call_max_openInterest_index:call_max_openInterest_index]
-        CALL_options_to_return_df = CALL_options_to_return_df.append(CALL_options_df.loc[call_max_volume_index:call_max_volume_index])
+        if call_max_volume_index != call_max_openInterest_index:
+            CALL_options_to_return_df = CALL_options_to_return_df.append(CALL_options_df.loc[call_max_volume_index:call_max_volume_index])
         CALL_options_to_return_df.columns = new_header #set the header row as the df header
         CALL_options_to_return_df = CALL_options_to_return_df.drop(columns = ['contractSize', 'CALL', 'currency', 'change','percentChange', 'lastTradeDate', 'lastPrice', 'inTheMoney','contractSymbol'])
-        #  print(call_max_openInterest_index,tabulate(CALL_options_to_return_df, headers = 'keys', tablefmt = 'psql'))
-
-        new_header = options_df.iloc[0] #grab the first row for the header
         return PUT_options_to_return_df, CALL_options_to_return_df
     return None, None
 
@@ -325,16 +330,17 @@ def get_title(name, df):
     return html.A(title, href='https://in.tradingview.com/chart/66XmQfYy/?symbol=' + name, target="_blank")
 
 
-def display_chart(df):
+def display_chart(name,df):
     fig = go.Figure(go.Scatter(
         x=df["Date"],
         y=df["Close"],
         line={"color": "#97151c"},
-        mode="lines"
+        mode="lines",
+        name=name
     ))
     # zoom_df = df.iloc['Date' >= start_date]
 
-    zoom_df = df[df.Date >= start_date]
+    zoom_df = df[df.Date >= twelve_months.strftime("%Y-%m-%d")]
     y_zoom_max = zoom_df["High"].max()
     y_zoom_min = zoom_df["Low"].min()
 
@@ -349,7 +355,7 @@ def display_chart(df):
             "b": 30,
             "l": 30,
         },
-        showlegend=False,
+        showlegend=True,
         dragmode='pan',
         titlefont={
             "family": "Raleway",
@@ -358,8 +364,8 @@ def display_chart(df):
         xaxis={
             #            "autorange": True,
             "range": [
-                start_date,
-                end_date
+                twelve_months,
+                date.today()
             ],
             "rangeselector": {
                 "buttons": [
@@ -400,6 +406,61 @@ def display_chart(df):
         }
     )
 
+    if name == "VIX":
+        fig.add_trace(go.Scatter(
+            x=[np.min(df['Date']), np.max(df['Date'])],
+            y=[30, 30],
+            mode="lines",
+            line=dict(shape='linear', color='rgb(255, 0, 0)'),
+            name='Panic +30'
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=[np.min(df['Date']), np.max(df['Date'])],
+            y=[25, 25],
+            mode="lines",
+            line=dict(shape='linear', color='rgb(255, 187, 0)'),
+            name='Fear +25'
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=[np.min(df['Date']), np.max(df['Date'])],
+            y=[22.5, 22.5],
+            mode="lines",
+            line=dict(shape='linear', color='rgb(0, 255, 42)'),
+            name='Hedge +22.5'
+        ))
+    else:
+        ath = np.round(float(df['Close'].max()))
+        pullback_level = np.round((ath * 0.95), 1)
+        correction_level = np.round((ath * 0.9), 1)
+        crash_level = np.round((ath * 0.8), 1)
+
+        fig.add_trace(go.Scatter(
+            x=[np.min(df['Date']), np.max(df['Date'])],
+            y=[pullback_level, pullback_level],
+            mode="lines",
+            line=dict(shape='linear', color='rgb(0, 255, 42)'),
+            name='Pullback level ' + str(pullback_level) + '$'
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=[np.min(df['Date']), np.max(df['Date'])],
+            y=[correction_level, correction_level],
+            mode="lines",
+            line=dict(shape='linear', color='rgb(255, 187, 0)'),
+            name='Correction level ' + str(correction_level) + '$'
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=[np.min(df['Date']), np.max(df['Date'])],
+            y=[crash_level, crash_level],
+            mode="lines",
+            line=dict(shape='linear', color='rgb(255, 0, 0)'),
+            name='Crash level ' + str(crash_level) + '$'
+        ))
+
+
     fig.update_layout(xaxis_rangeslider_visible=False)
     #    fig.update_xaxes(type="date", range=[start_date, end_date])
     fig.update_yaxes(range=[y_zoom_min, y_zoom_max])
@@ -409,6 +470,8 @@ def display_chart(df):
 
 
 def display_analyzer(symbol, df):
+
+    levels, close_price, min_level, max_level = calculate_levels(df)
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
                         vertical_spacing=0.012,
                         row_heights=[0.60, 0.10, 0.30],
@@ -423,7 +486,7 @@ def display_analyzer(symbol, df):
                                  high=df['High'],
                                  low=df['Low'],
                                  close=df['Close'],
-                                 name=symbol,
+                                 name=symbol + " " + str(close_price) + "$",
                                  showlegend=True), row=1, col=1)
     # zoom_df = df.iloc['Date' >= start_date]
 
@@ -523,7 +586,6 @@ def display_analyzer(symbol, df):
                              line=dict(color='black', width=2),
                              name='MA 300'), row=1, col=1)
 
-    levels, close_price, min_level, max_level = calculate_levels(df)
 
     ath_percent = 0
     if levels is not None:
@@ -535,8 +597,9 @@ def display_analyzer(symbol, df):
             if idx > 0:
                 prev_level = levels[idx - 1]
                 diff = prev_level - current_level
-                ath_diff = ath - current_level
                 percent = (diff / current_level) * 100
+
+                ath_diff = ath - current_level
                 ath_percent = (ath_diff / ath) * 100
             if level <= (min_level * 0.98) or level >= (max_level * 1.02):
                 line_color = 'rgba(100, 10, 100, 0.2)'
