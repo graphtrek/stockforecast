@@ -88,6 +88,11 @@ p.padded {
   font-weight: bold;
 }
 
+.vol-max-text {
+  color: #a86932;
+  font-weight: bold;
+}
+
 table {
   width: 100%;
 }

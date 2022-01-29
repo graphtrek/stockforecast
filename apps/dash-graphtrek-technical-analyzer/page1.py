@@ -180,11 +180,13 @@ def display_value(symbol):
 
     put_options_df = put_options_df.append(near_put_options_df)
     put_options_df = put_options_df.append(far_put_options_df)
-    put_options_df = put_options_df.sort_values(by=['dte'])
+    if len(put_options_df) > 0:
+        put_options_df = put_options_df.sort_values(by=['dte'])
 
     call_options_df = call_options_df.append(near_call_options_df)
     call_options_df = call_options_df.append(far_call_options_df)
-    call_options_df = call_options_df.sort_values(by=['dte'])
+    if len(call_options_df) > 0:
+        call_options_df = call_options_df.sort_values(by=['dte'])
 
     calls_table = html.Table(make_dash_table(call_options_df))
     puts_table = html.Table(make_dash_table(put_options_df))

@@ -111,6 +111,7 @@ def make_dash_table(df):
             html_header_row.append(html.Th([header.upper()]))
         table.append(html.Tr(html_header_row))
         max_open_interest = df["O.I."].idxmax()
+        max_volume = df["volume"].idxmax()
         for index, row in df.iterrows():
             html_row = []
             for i in range(len(row)):
@@ -121,6 +122,8 @@ def make_dash_table(df):
 
             if index == max_open_interest:
                 table.append(html.Tr(html_row, className="oi-max-text"))
+            elif index == max_volume:
+                table.append(html.Tr(html_row, className="vol-max-text"))
             else:
                 table.append(html.Tr(html_row))
     return table
