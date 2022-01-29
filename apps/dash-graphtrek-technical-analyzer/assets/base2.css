@@ -439,7 +439,7 @@ pre > code {
 th,
 td {
   padding: 12px 15px;
-  text-align: left;
+  text-align: center;
   border-bottom: 1px solid #e1e1e1;
 }
 th:first-child,

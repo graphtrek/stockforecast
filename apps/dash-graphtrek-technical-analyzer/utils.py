@@ -114,7 +114,10 @@ def make_dash_table(df):
         for index, row in df.iterrows():
             html_row = []
             for i in range(len(row)):
-                html_row.append(html.Td([row[i]]))
+                td_val = row[i]
+                if i == 4 or i == 5:
+                    td_val = '{:,}'.format(int(td_val))
+                html_row.append(html.Td([td_val]))
 
             if index == max_open_interest:
                 table.append(html.Tr(html_row, className="oi-max-text"))
@@ -315,10 +318,16 @@ def get_earnings(symbols):
     symbols_df['Earning'], symbols_df['Day'] = earnings_array[:, 0], earnings_array[:, 1]
     return symbols_df
 
-def get_title(name, df):
+
+def get_last_price(df):
     last_day_df = df.iloc[-1:]
     last_date = last_day_df['Date'].dt.strftime('%Y-%m-%d')
     close_price = np.round(float(df.iloc[-1:]['Close']), 1)
+    return close_price, last_date
+
+
+def get_title(name, df):
+    close_price, last_date = get_last_price(df)
 
     ath = np.round(float(df['Close'].max()))
     discount = np.round(ath - close_price, 1)
@@ -331,12 +340,14 @@ def get_title(name, df):
 
 
 def display_chart(name,df):
+    close_price, last_date = get_last_price(df)
+
     fig = go.Figure(go.Scatter(
         x=df["Date"],
         y=df["Close"],
         line={"color": "#97151c"},
         mode="lines",
-        name=name
+        name=name + " " + str(close_price) + "$"
     ))
     # zoom_df = df.iloc['Date' >= start_date]
 
@@ -412,7 +423,7 @@ def display_chart(name,df):
             y=[30, 30],
             mode="lines",
             line=dict(shape='linear', color='rgb(255, 0, 0)'),
-            name='Panic +30'
+            name='Panic +30$'
         ))
 
         fig.add_trace(go.Scatter(
@@ -420,7 +431,7 @@ def display_chart(name,df):
             y=[25, 25],
             mode="lines",
             line=dict(shape='linear', color='rgb(255, 187, 0)'),
-            name='Fear +25'
+            name='Fear +25$'
         ))
 
         fig.add_trace(go.Scatter(
@@ -428,7 +439,7 @@ def display_chart(name,df):
             y=[22.5, 22.5],
             mode="lines",
             line=dict(shape='linear', color='rgb(0, 255, 42)'),
-            name='Hedge +22.5'
+            name='Hedge +22.5$'
         ))
     else:
         ath = np.round(float(df['Close'].max()))
@@ -441,7 +452,7 @@ def display_chart(name,df):
             y=[pullback_level, pullback_level],
             mode="lines",
             line=dict(shape='linear', color='rgb(0, 255, 42)'),
-            name='Pullback level ' + str(pullback_level) + '$'
+            name='Pullback ' + str(pullback_level) + '$'
         ))
 
         fig.add_trace(go.Scatter(
@@ -449,7 +460,7 @@ def display_chart(name,df):
             y=[correction_level, correction_level],
             mode="lines",
             line=dict(shape='linear', color='rgb(255, 187, 0)'),
-            name='Correction level ' + str(correction_level) + '$'
+            name='Correction ' + str(correction_level) + '$'
         ))
 
         fig.add_trace(go.Scatter(
@@ -457,7 +468,7 @@ def display_chart(name,df):
             y=[crash_level, crash_level],
             mode="lines",
             line=dict(shape='linear', color='rgb(255, 0, 0)'),
-            name='Crash level ' + str(crash_level) + '$'
+            name='Crash ' + str(crash_level) + '$'
         ))
 
 
@@ -585,7 +596,6 @@ def display_analyzer(symbol, df):
                              y=df['MA300'],
                              line=dict(color='black', width=2),
                              name='MA 300'), row=1, col=1)
-
 
     ath_percent = 0
     if levels is not None:
