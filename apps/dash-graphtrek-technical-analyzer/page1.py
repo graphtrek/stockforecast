@@ -2,7 +2,7 @@ from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output
 import pandas as pd
-
+import numpy as np
 from app import app
 from utils import (
     Header,
@@ -170,23 +170,34 @@ def display_value(symbol):
     near_put_options_df, near_call_options_df = find_level_option_interests(symbol, min_level, max_level, 0, 45)
     far_put_options_df, far_call_options_df = find_level_option_interests(symbol, min_level, max_level, 45, 365)
 
-    call_weight = 0
+    all_call_options = 0
     call_options_df = call_options_df.append(near_call_options_df)
     call_options_df = call_options_df.append(far_call_options_df)
     if len(call_options_df) > 0:
         call_options_df = call_options_df.sort_values(by=['dte'])
-        call_weight = int(sum(call_options_df[['openInterest', 'volume']].sum(axis=1)))
+        all_call_options = int(sum(call_options_df[['openInterest', 'volume']].sum(axis=1)))
 
-    put_weight = 0
+    all_put_options = 0
     put_options_df = put_options_df.append(near_put_options_df)
     put_options_df = put_options_df.append(far_put_options_df)
     if len(put_options_df) > 0:
         put_options_df = put_options_df.sort_values(by=['dte'])
-        put_weight = int(sum(put_options_df[['openInterest', 'volume']].sum(axis=1)))
+        all_put_options = int(sum(put_options_df[['openInterest', 'volume']].sum(axis=1)))
 
-    calls_title = html.H6(["CALL " + '{:,}'.format(call_weight)], className="subtitle padded")
+    all_options = all_call_options + all_put_options
+    if all_options > 0:
+        put_options_percent = np.round((all_put_options / all_options) * 100, 1)
+        call_options_percent = np.round((all_call_options / all_options) * 100, 1)
+        calls_title = html.H6(
+            ["CALL" + " " + str(call_options_percent) + "%" + " (" + '{:,}'.format(all_call_options) + ")"],
+            className="subtitle padded")
+        puts_title = html.H6(
+            ["PUT" + " " + str(put_options_percent) + "%" + " (" + '{:,}'.format(all_put_options) + ")"],
+            className="subtitle padded")
+    else:
+        calls_title = html.H6(["CALL"], className="subtitle padded")
+        puts_title = html.H6(["PUT"], className="subtitle padded"),
+
     calls_table = html.Table(make_dash_table(call_options_df))
-
-    puts_title = html.H6(["PUT " + '{:,}'.format(put_weight)], className="subtitle padded"),
     puts_table = html.Table(make_dash_table(put_options_df))
     return xxx_div, vix_div, qqq_div, calls_title, calls_table, puts_title, puts_table
