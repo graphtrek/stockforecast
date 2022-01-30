@@ -159,7 +159,7 @@ def is_resistance(df, i):
     cond2 = df['High'][i] > df['High'][i + 1]
     cond3 = df['High'][i + 1] > df['High'][i + 2]
     cond4 = df['High'][i - 1] > df['High'][i - 2]
-    return (cond1 and cond2 and cond3 and cond4)
+    return cond1 and cond2 and cond3 and cond4
 
 
 def is_far_from_level(value, levels, df):
@@ -213,9 +213,9 @@ def get_stock_price(ticker_name, from_date):
 def calculate_levels(chart_df):
     levels = []
     low = 0
-    high = np.round(chart_df['Close'].max(), 1)
+    high = np.round(chart_df['High'].max(), 1)
     last_day_df = chart_df[-1:]
-    last_date = last_day_df['Date'].index[0].date()
+    #last_date = last_day_df['Date'].index[0].date()
     close_price = np.round(last_day_df['Close'][0], 1)
     for i in range(2, len(chart_df) - 2):
         try:
@@ -229,15 +229,18 @@ def calculate_levels(chart_df):
                 levels.append(high)
         except:
             print('calculate_levels error')
+
+    levels.append(np.max(levels) * 1.02)
+
     levels = sorted(levels, reverse=True)
 
     min_level = np.round(find_nearest_less_than(close_price, levels), 1)
     if min_level > close_price:
-        min_level = np.round(close_price * 0.8, 1)
+        min_level = np.round(close_price, 1)
 
     max_level = np.round(find_nearest_greater_than(close_price, levels), 1)
     if max_level < close_price:
-        max_level = np.round(close_price * 1.2, 1)
+        max_level = np.round(close_price, 1)
 
     print('Calculate Levels close_price', close_price, 'min_level:', min_level, 'max_level:', max_level)
     return levels, close_price, min_level, max_level
@@ -505,8 +508,8 @@ def display_analyzer(symbol, df):
     # zoom_df = df.iloc['Date' >= start_date]
 
     zoom_df = df[df.Date >= start_date]
-    y_zoom_max = zoom_df["High"].max()
-    y_zoom_min = zoom_df["Low"].min()
+    y_zoom_max = zoom_df["High"].max() * 1.05
+    y_zoom_min = zoom_df["Low"].min() * 0.95
 
     fig.update_layout(
         autosize=True,
@@ -614,7 +617,7 @@ def display_analyzer(symbol, df):
 
                 ath_diff = ath - current_level
                 ath_percent = (ath_diff / ath) * 100
-            if level <= (min_level * 0.98) or level >= (max_level * 1.02):
+            if level <= (min_level * 0.99) or level >= (max_level * 1.01):
                 line_color = 'rgba(100, 10, 100, 0.2)'
                 line_fill = None
             else:
