@@ -112,12 +112,16 @@ def make_dash_table(df):
         table.append(html.Tr(html_header_row))
         max_open_interest = df["O.I."].idxmax()
         max_volume = df["volume"].idxmax()
+        df['O.I.'] = df['O.I.'].fillna(0) #replace all NaN values with zeros
+        df['O.I.'] = df['O.I.'].astype(int) #convert column from float to integer
+        df['I.V.'] = df['I.V.'].fillna(0) #replace all NaN values with zeros
+        df['I.V.'] = df['I.V.'].astype(int) #convert column from float to integer
         for index, row in df.iterrows():
             html_row = []
             for i in range(len(row)):
                 td_val = row[i]
                 if i == 4 or i == 5:
-                    td_val = '{:,}'.format(int(td_val))
+                    td_val = '{:,}'.format(td_val)
                 html_row.append(html.Td([td_val]))
 
             if index == max_open_interest:
