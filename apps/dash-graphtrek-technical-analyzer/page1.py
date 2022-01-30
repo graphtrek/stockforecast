@@ -65,11 +65,8 @@ layout = html.Div(
                                          'value': row['Symbol']} for index, row in load_dropdown().iterrows()
                                     ],
                                     value="TSLA"
-
                                 )
-
                             ]
-
                         )
                     ],
                     className="row"
@@ -94,22 +91,15 @@ layout = html.Div(
                     [
                         html.Div(
                             [
-                                html.H6(
-                                    ["CALL"], className="subtitle padded"
-                                ),
+                                html.Div(id="calls_title"),
                                 html.Div(id="calls")
-                            ],
-                            className="six columns",
+                            ], className="six columns"
                         ),
                         html.Div(
                             [
-                                html.H6(
-                                    ["PUT"],
-                                    className="subtitle padded",
-                                ),
+                                html.Div(id="puts_title"),
                                 html.Div(id="puts")
-                            ],
-                            className="six columns",
+                            ], className="six columns"
                         ),
                     ],
                     className="row ",
@@ -127,7 +117,9 @@ layout = html.Div(
     [Output('page1-display-value', 'children'),
      Output('vix', 'children'),
      Output('qqq', 'children'),
+     Output('calls_title', 'children'),
      Output('calls', 'children'),
+     Output('puts_title', 'children'),
      Output('puts', 'children')],
     [Input('page1-dropdown', 'value')])
 def display_value(symbol):
@@ -178,16 +170,23 @@ def display_value(symbol):
     near_put_options_df, near_call_options_df = find_level_option_interests(symbol, min_level, max_level, 0, 45)
     far_put_options_df, far_call_options_df = find_level_option_interests(symbol, min_level, max_level, 45, 365)
 
-    put_options_df = put_options_df.append(near_put_options_df)
-    put_options_df = put_options_df.append(far_put_options_df)
-    if len(put_options_df) > 0:
-        put_options_df = put_options_df.sort_values(by=['dte'])
-
+    call_weight = 0
     call_options_df = call_options_df.append(near_call_options_df)
     call_options_df = call_options_df.append(far_call_options_df)
     if len(call_options_df) > 0:
         call_options_df = call_options_df.sort_values(by=['dte'])
+        call_weight = int(sum(call_options_df[['openInterest', 'volume']].sum(axis=1)))
 
+    put_weight = 0
+    put_options_df = put_options_df.append(near_put_options_df)
+    put_options_df = put_options_df.append(far_put_options_df)
+    if len(put_options_df) > 0:
+        put_options_df = put_options_df.sort_values(by=['dte'])
+        put_weight = int(sum(put_options_df[['openInterest', 'volume']].sum(axis=1)))
+
+    calls_title = html.H6(["CALL " + '{:,}'.format(call_weight)], className="subtitle padded")
     calls_table = html.Table(make_dash_table(call_options_df))
+
+    puts_title = html.H6(["PUT " + '{:,}'.format(put_weight)], className="subtitle padded"),
     puts_table = html.Table(make_dash_table(put_options_df))
-    return xxx_div, vix_div, qqq_div, calls_table, puts_table
+    return xxx_div, vix_div, qqq_div, calls_title, calls_table, puts_title, puts_table
