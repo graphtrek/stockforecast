@@ -17,10 +17,11 @@ import os.path
 twelve_months = date.today() + relativedelta(months=-12)
 eleven_months = date.today() + relativedelta(months=-11)
 six_months = date.today() + relativedelta(months=-6)
+five_months = date.today() + relativedelta(months=-5)
 one_month = date.today() + relativedelta(months=+1)
-
-start_date = eleven_months.strftime("%Y-%m-%d")
-end_date = one_month.strftime("%Y-%m-%d")
+fourteen_days = date.today() + relativedelta(days=+14)
+start_date = five_months.strftime("%Y-%m-%d")
+end_date = fourteen_days.strftime("%Y-%m-%d")
 
 
 def Header(app):
@@ -61,16 +62,16 @@ def get_header(app):
                         [html.H5("Graphtrek Technical Analyzer")],
                         className="seven columns main-title",
                     ),
-                    html.Div(
-                        [
-                            dcc.Link(
-                                "Reload",
-                                href="/dash-graphtrek-technical-analyzer",
-                                className="full-view-link",
-                            )
-                        ],
-                        className="five columns",
-                    ),
+                    # html.Div(
+                    #     [
+                    #         dcc.Link(
+                    #             "News",
+                    #             href="/dash-graphtrek-technical-analyzer/page2",
+                    #             className="full-view-link",
+                    #         )
+                    #     ],
+                    #     className="five columns",
+                    # ),
                 ],
                 className="twelve columns",
                 style={"padding-left": "0"},
@@ -218,9 +219,7 @@ def calculate_levels(chart_df):
     levels = []
     low = 0
     high = np.round(chart_df['High'].max(), 1)
-    last_day_df = chart_df[-1:]
-    #last_date = last_day_df['Date'].index[0].date()
-    close_price = np.round(last_day_df['Close'][0], 1)
+    close_price, last_date = get_last_price(chart_df)
     for i in range(2, len(chart_df) - 2):
         try:
             if is_support(chart_df, i):
@@ -332,21 +331,21 @@ def get_earnings(symbols):
 def get_last_price(df):
     last_day_df = df.iloc[-1:]
     last_date = last_day_df['Date'].dt.strftime('%Y-%m-%d')
-    close_price = np.round(float(df.iloc[-1:]['Close']), 1)
+    close_price = np.round(float(df.iloc[-1:]['Adj Close']), 2)
     return close_price, last_date
 
 
 def get_title(name, df):
     close_price, last_date = get_last_price(df)
 
-    ath = np.round(float(df['Close'].max()))
+    ath = np.round(float(df['Adj Close'].max()))
     discount = np.round(ath - close_price, 1)
-    discount_percent = np.round((discount / ath) * 100, 1)
+    discount_percent = np.round((discount / ath) * 100, 2)
 
     title = name + " " + last_date + " Last Price:" + str(close_price) + "$ " + " Highest:" + str(
         ath) + "$ Discount:" + str(discount) + "$ (" + str(discount_percent) + "%)"
 
-    return html.A(title, href='https://in.tradingview.com/chart/66XmQfYy/?symbol=' + name, target="_blank")
+    return html.A(title, href='https://in.tradingview.com/chart?symbol=' + name, target="_blank")
 
 
 def display_chart(name,df):
@@ -540,12 +539,12 @@ def display_analyzer(symbol, df):
             ],
             "rangeselector": {
                 "buttons": [
-                    {
-                        "count": 1,
-                        "label": "1M",
-                        "step": "month",
-                        "stepmode": "backward"
-                    },
+                    # {
+                    #     "count": 1,
+                    #     "label": "1M",
+                    #     "step": "month",
+                    #     "stepmode": "backward"
+                    # },
                     {
                         "count": 3,
                         "label": "3M",
@@ -661,8 +660,8 @@ def display_analyzer(symbol, df):
                                  name='RSI(14) Test Predict'
                                  ), row=3, col=1)
 
-        fig.add_trace(go.Scatter(x=indicators_prediction_df['Date'],
-                                 y=indicators_prediction_df['Prediction'],
+        fig.add_trace(go.Scatter(x=indicators_prediction_df.head(14)['Date'],
+                                 y=indicators_prediction_df.head(14)['Prediction'],
                                  line=dict(color='firebrick', width=3, dash='dot'),
                                  name='RSI(14) Future Predict'
                                  ), row=3, col=1)
@@ -672,7 +671,7 @@ def display_analyzer(symbol, df):
         print("first_prediction:", first_prediction, "mean_prediction:", mean_prediction)
 
         fig.add_trace(go.Scatter(
-            x=[np.min(indicators_prediction_df['Date']), np.max(indicators_prediction_df['Date'])],
+            x=[np.min(indicators_prediction_df['Date']), np.max(indicators_prediction_df.head(14)['Date'])],
             y=[first_prediction, mean_prediction],
             mode="lines",
             line=dict(shape='linear', color='rgb(255, 153, 0)'),

@@ -1,6 +1,7 @@
 from dash import dcc
 from dash import html
-from dash.dependencies import Input, Output
+import dash_bootstrap_components as dbc
+from dash.dependencies import Input, Output, State
 import pandas as pd
 import numpy as np
 from app import app
@@ -104,7 +105,16 @@ layout = html.Div(
                     ],
                     className="row ",
                 ),
-
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader("Header"),
+                        dbc.ModalBody("This is the content of the modal"),
+                        dbc.ModalFooter(
+                            dbc.Button("Close", id="close", className="ml-auto")
+                        ),
+                    ],
+                    id="modal",
+                )
             ],
             className="sub_page",
         ),
@@ -201,3 +211,13 @@ def display_value(symbol):
     calls_table = html.Table(make_dash_table(call_options_df))
     puts_table = html.Table(make_dash_table(put_options_df))
     return xxx_div, vix_div, qqq_div, calls_title, calls_table, puts_title, puts_table
+
+@app.callback(
+    Output("modal", "is_open"),
+    [Input("open", "n_clicks"), Input("close", "n_clicks")],
+    [State("modal", "is_open")],
+)
+def toggle_modal(n1, n2, is_open):
+    if n1 or n2:
+        return not is_open
+    return is_open
