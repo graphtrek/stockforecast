@@ -163,7 +163,7 @@ def display_value(symbol):
         html.H6([get_title(symbol, df_xxx_graph),
                  " ",
                  html.A("TradingView",
-                        href='https://in.tradingview.com/chart?symbol=TSLA' + symbol,
+                        href='https://in.tradingview.com/chart?symbol=' + symbol,
                         style={'font-family': 'Times New Roman, Times, serif', 'font-weight': 'bold'},
                         target="_blank"),
                  " ",

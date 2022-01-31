@@ -254,7 +254,7 @@ def find_level_option_interests(symbol,min_level,max_level, dte_min, dte_max):
     file_exists = os.path.exists(file_path)
     if file_exists is True:
         options_df = pd.read_csv(file_path)
-        options_df['impliedVolatility'] = np.round(options_df['impliedVolatility'],2)
+        options_df['impliedVolatility'] = np.round(options_df['impliedVolatility'] * 100,2)
         options_df['percentChange'] = np.round(options_df['percentChange'],2)
         #expirationDates = options_df['expirationDate'].unique()
         #print(sorted(expirationDates))
