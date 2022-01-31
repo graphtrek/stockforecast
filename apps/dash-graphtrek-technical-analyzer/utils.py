@@ -20,7 +20,7 @@ six_months = date.today() + relativedelta(months=-6)
 five_months = date.today() + relativedelta(months=-5)
 one_month = date.today() + relativedelta(months=+1)
 fourteen_days = date.today() + relativedelta(days=+14)
-start_date = five_months.strftime("%Y-%m-%d")
+start_date = six_months.strftime("%Y-%m-%d")
 end_date = fourteen_days.strftime("%Y-%m-%d")
 
 
@@ -521,7 +521,7 @@ def display_analyzer(symbol, df):
         font={"family": "Raleway", "size": 10},
         margin={
             "r": 30,
-            "t": 30,
+            "t": 10,
             "b": 30,
             "l": 30,
         },
@@ -533,46 +533,46 @@ def display_analyzer(symbol, df):
         },
         xaxis={
             #            "autorange": True,
-            "range": [
-                start_date,
-                end_date
-            ],
-            "rangeselector": {
-                "buttons": [
-                    # {
-                    #     "count": 1,
-                    #     "label": "1M",
-                    #     "step": "month",
-                    #     "stepmode": "backward"
-                    # },
-                    {
-                        "count": 3,
-                        "label": "3M",
-                        "step": "month",
-                        "stepmode": "backward"
-
-                    },
-                    {
-                        "count": 6,
-                        "label": "6M",
-                        "step": "month",
-                        "stepmode": "backward"
-                    },
-                    {
-                        "count": 1,
-                        "label": "1Y",
-                        "step": "year",
-                        "stepmode": "backward",
-                    },
-                    {
-                        "label": "All",
-                        "step": "all",
-                    },
-                ]
-            },
+            # "range": [
+            #     start_date,
+            #     end_date
+            # ],
+            # "rangeselector": {
+            #     "buttons": [
+            #         # {
+            #         #     "count": 1,
+            #         #     "label": "1M",
+            #         #     "step": "month",
+            #         #     "stepmode": "backward"
+            #         # },
+            #         {
+            #             "count": 3,
+            #             "label": "3M",
+            #             "step": "month",
+            #             "stepmode": "backward"
+            #
+            #         },
+            #         {
+            #             "count": 6,
+            #             "label": "6M",
+            #             "step": "month",
+            #             "stepmode": "backward"
+            #         },
+            #         {
+            #             "count": 1,
+            #             "label": "1Y",
+            #             "step": "year",
+            #             "stepmode": "backward",
+            #         },
+            #         {
+            #             "label": "All",
+            #             "step": "all",
+            #         },
+            #     ]
+            # },
             "showline": False,
             "type": "date",
-            "zeroline": False
+            "zeroline": True
         }
     )
 
@@ -703,7 +703,7 @@ def display_analyzer(symbol, df):
     ), row=3, col=1)
 
     fig.update_layout(xaxis_rangeslider_visible=False)
-    #    fig.update_xaxes(type="date", range=[start_date, end_date])
+    fig.update_xaxes(type="date", range=[start_date, end_date])
     fig.update_yaxes(range=[y_zoom_min, y_zoom_max], row=1, col=1)
     fig.update_yaxes(showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')
     fig.update_xaxes(showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')

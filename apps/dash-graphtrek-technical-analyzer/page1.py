@@ -137,7 +137,7 @@ def display_value(symbol):
         symbol = "TSLA"
     df_vix_graph = get_stock_price("^VIX", "2021-01-01")
     df_qqq_graph = get_stock_price("QQQ", "2021-01-01")
-    df_xxx_graph = get_stock_price(symbol, "2020-01-01")
+    df_xxx_graph = get_stock_price(symbol, "2021-01-01")
 
     qqq_div = html.Div(
         [
@@ -162,10 +162,17 @@ def display_value(symbol):
     xxx_div = html.Div([
         html.H6([get_title(symbol, df_xxx_graph),
                  " ",
+                 html.A("TradingView",
+                        href='https://in.tradingview.com/chart?symbol=TSLA' + symbol,
+                        style={'font-family': 'Times New Roman, Times, serif', 'font-weight': 'bold'},
+                        target="_blank"),
+                 " ",
                  html.A("SeekingAlpha",
                         href='https://seekingalpha.com/symbol/' + symbol,
                         style={'font-family': 'Times New Roman, Times, serif', 'font-weight': 'bold'},
-                        target="_blank")],
+                        target="_blank")
+
+                 ],
                 className="subtitle padded"),
         dcc.Graph(
             id="graph-xxx",
