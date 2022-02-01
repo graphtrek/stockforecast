@@ -181,6 +181,31 @@ li {
   text-align: center;
   transition-duration: 1s;
 }
+
+.symbol_view_red {
+  background-color: rgb(152, 21, 27);
+  color: white !important;
+  font-size: medium;
+  padding: 15px 15px;
+  float: left;
+  margin-left: 60%;
+  width: 50%;
+  text-align: center;
+  transition-duration: 1s;
+}
+
+.symbol_view_green {
+  background-color: rgb(38, 103, 40);
+  color: white !important;
+  font-size: medium;
+  padding: 15px 15px;
+  float: left;
+  margin-left: 60%;
+  width: 50%;
+  text-align: center;
+  transition-duration: 1s;
+}
+
 .all-tabs {
   text-align: center;
   font-size: 13px;

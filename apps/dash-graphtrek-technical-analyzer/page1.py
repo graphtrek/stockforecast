@@ -15,7 +15,8 @@ from utils import (
     get_text,
     make_dash_table,
     find_level_option_interests,
-    calculate_levels
+    calculate_levels,
+    get_last_price
 )
 
 symbols = ['^TNX', 'QQQ', 'SPY', 'IWM', '^VIX', 'TSLA', 'VTI', 'XLE', 'XLF', 'TQQQ']
@@ -124,7 +125,8 @@ layout = html.Div(
 
 
 @app.callback(
-    [Output('page1-display-value', 'children'),
+    [Output('symbol','children'),
+     Output('page1-display-value', 'children'),
      Output('vix', 'children'),
      Output('qqq', 'children'),
      Output('calls_title', 'children'),
@@ -180,6 +182,21 @@ def display_value(symbol):
             config={"displayModeBar": False},
         )
     ])
+
+    close_price, last_date, prev_close_price = get_last_price(df_xxx_graph)
+    change = np.round(close_price - prev_close_price,2)
+    change_percent = np.round((change / prev_close_price) * 100, 1)
+    if change > 0:
+        symbol_view = html.B(
+            symbol + " " + str(close_price) + "$" + " (" + str(change_percent) + "%" + ") " + str(change) + "$",
+            className="symbol_view_green",
+        )
+    else:
+        symbol_view = html.B(
+            symbol + " " + str(close_price) + "$" + " (" + str(change_percent) + "%" + ") " + str(change) + "$",
+            className="symbol_view_red",
+        )
+
     levels, close_price, min_level, max_level = calculate_levels(df_xxx_graph)
 
     put_options_df = pd.DataFrame()
@@ -217,7 +234,7 @@ def display_value(symbol):
 
     calls_table = html.Table(make_dash_table(call_options_df))
     puts_table = html.Table(make_dash_table(put_options_df))
-    return xxx_div, vix_div, qqq_div, calls_title, calls_table, puts_title, puts_table
+    return symbol_view, xxx_div, vix_div, qqq_div, calls_title, calls_table, puts_title, puts_table
 
 @app.callback(
     Output("modal", "is_open"),

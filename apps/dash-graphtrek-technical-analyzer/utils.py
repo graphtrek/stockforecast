@@ -62,16 +62,7 @@ def get_header(app):
                         [html.H5("Graphtrek Technical Analyzer")],
                         className="seven columns main-title",
                     ),
-                    # html.Div(
-                    #     [
-                    #         dcc.Link(
-                    #             "News",
-                    #             href="/dash-graphtrek-technical-analyzer/page2",
-                    #             className="full-view-link",
-                    #         )
-                    #     ],
-                    #     className="five columns",
-                    # ),
+                    html.Div(id="symbol", className="five columns")
                 ],
                 className="twelve columns",
                 style={"padding-left": "0"},
@@ -219,7 +210,7 @@ def calculate_levels(chart_df):
     levels = []
     low = 0
     high = np.round(chart_df['High'].max(), 1)
-    close_price, last_date = get_last_price(chart_df)
+    close_price, last_date, prev_close_price = get_last_price(chart_df)
     for i in range(2, len(chart_df) - 2):
         try:
             if is_support(chart_df, i):
@@ -330,13 +321,16 @@ def get_earnings(symbols):
 
 def get_last_price(df):
     last_day_df = df.iloc[-1:]
+    before_last_day_df = df.tail(2)
     last_date = last_day_df['Date'].dt.strftime('%Y-%m-%d')
     close_price = np.round(float(df.iloc[-1:]['Adj Close']), 2)
-    return close_price, last_date
+    prev_close_price = np.round(float(before_last_day_df['Adj Close'].iloc[0]), 2)
+    #print(close_price, prev_close_price)
+    return close_price, last_date, prev_close_price
 
 
 def get_title(name, df):
-    close_price, last_date = get_last_price(df)
+    close_price, last_date, prev_close_price = get_last_price(df)
 
     ath = np.round(float(df['Adj Close'].max()))
     discount = np.round(ath - close_price, 1)
@@ -349,7 +343,7 @@ def get_title(name, df):
 
 
 def display_chart(name,df):
-    close_price, last_date = get_last_price(df)
+    close_price, last_date, prev_close_price = get_last_price(df)
 
     fig = go.Figure(go.Scatter(
         x=df["Date"],
@@ -650,33 +644,35 @@ def display_analyzer(symbol, df):
                              name='RSI(14)'
                              ), row=3, col=1)
 
-    indicators_test_prediction_df = pd.read_csv("/home/nexys/graphtrek/stock/" + symbol + "_test_prediction.csv")
-    indicators_prediction_df = pd.read_csv("/home/nexys/graphtrek/stock/" + symbol + "_prediction.csv")
+    if os.path.exists("/home/nexys/graphtrek/stock/" + symbol + "_test_prediction.csv") and \
+            os.path.exists("/home/nexys/graphtrek/stock/" + symbol + "_prediction.csv"):
+        indicators_test_prediction_df = pd.read_csv("/home/nexys/graphtrek/stock/" + symbol + "_test_prediction.csv")
+        indicators_prediction_df = pd.read_csv("/home/nexys/graphtrek/stock/" + symbol + "_prediction.csv")
 
-    if indicators_prediction_df is not None and indicators_prediction_df is not None:
-        fig.add_trace(go.Scatter(x=indicators_test_prediction_df['Date'],
-                                 y=indicators_test_prediction_df['Prediction'],
-                                 line=dict(color='firebrick', width=3, dash='dash'),
-                                 name='RSI(14) Test Predict'
-                                 ), row=3, col=1)
+        if indicators_prediction_df is not None and indicators_prediction_df is not None:
+            fig.add_trace(go.Scatter(x=indicators_test_prediction_df['Date'],
+                                     y=indicators_test_prediction_df['Prediction'],
+                                     line=dict(color='firebrick', width=3, dash='dash'),
+                                     name='RSI(14) Test Predict'
+                                     ), row=3, col=1)
 
-        fig.add_trace(go.Scatter(x=indicators_prediction_df.head(14)['Date'],
-                                 y=indicators_prediction_df.head(14)['Prediction'],
-                                 line=dict(color='firebrick', width=3, dash='dot'),
-                                 name='RSI(14) Future Predict'
-                                 ), row=3, col=1)
+            fig.add_trace(go.Scatter(x=indicators_prediction_df.head(14)['Date'],
+                                     y=indicators_prediction_df.head(14)['Prediction'],
+                                     line=dict(color='firebrick', width=3, dash='dot'),
+                                     name='RSI(14) Future Predict'
+                                     ), row=3, col=1)
 
-        first_prediction = indicators_prediction_df['Prediction'][0]
-        mean_prediction = np.mean(indicators_prediction_df['Prediction'])
-        print("first_prediction:", first_prediction, "mean_prediction:", mean_prediction)
+            first_prediction = indicators_prediction_df['Prediction'][0]
+            mean_prediction = np.mean(indicators_prediction_df['Prediction'])
+            print("first_prediction:", first_prediction, "mean_prediction:", mean_prediction)
 
-        fig.add_trace(go.Scatter(
-            x=[np.min(indicators_prediction_df['Date']), np.max(indicators_prediction_df.head(14)['Date'])],
-            y=[first_prediction, mean_prediction],
-            mode="lines",
-            line=dict(shape='linear', color='rgb(255, 153, 0)'),
-            name='RSI(14) mean prediction'
-        ), row=3, col=1)
+            fig.add_trace(go.Scatter(
+                x=[np.min(indicators_prediction_df['Date']), np.max(indicators_prediction_df.head(14)['Date'])],
+                y=[first_prediction, mean_prediction],
+                mode="lines",
+                line=dict(shape='linear', color='rgb(255, 153, 0)'),
+                name='RSI(14) mean prediction'
+            ), row=3, col=1)
 
     fig.add_trace(go.Scatter(
         x=[np.min(df['Date']), np.max(df['Date'])],
