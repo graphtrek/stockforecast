@@ -30,7 +30,7 @@ symbols += ['ABBV', 'AFRM', 'AMD', 'AMZN', 'APPS', 'ASTR', 'ATVI', 'BNGO',
 symbols += ['AAPL', 'ARKG', 'ARKK', 'ARKQ', 'BA', 'CHPT', 'COIN', 'DDOG',
             'DOCU', 'EA', 'FB', 'GOOGL']
 
-symbols += ['MA', 'MP', 'MRNA', 'MSTR', 'MCD', 'NNDM']
+symbols += ['MA', 'MP', 'MRNA', 'MSTR', 'MCD', 'NNDM', 'HOOD', 'MCD', 'MARA', 'F', 'MMM']
 
 symbols += ['PFE', 'PINS', 'ROKU', 'SBUX', 'SHOP', 'SOXL', 'SOXX']
 
