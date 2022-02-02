@@ -77,7 +77,7 @@ layout = html.Div(
                 html.Div(
                     [
                         html.Div(id="vix", className="six columns"),
-                        html.Div(id="qqq", className="six columns"),
+                        html.Div(id="spy", className="six columns"),
                     ],
                     className="row ",
                 ),
@@ -128,7 +128,7 @@ layout = html.Div(
     [Output('symbol','children'),
      Output('page1-display-value', 'children'),
      Output('vix', 'children'),
-     Output('qqq', 'children'),
+     Output('spy', 'children'),
      Output('calls_title', 'children'),
      Output('calls', 'children'),
      Output('puts_title', 'children'),
@@ -138,15 +138,15 @@ def display_value(symbol):
     if symbol is None:
         symbol = "TSLA"
     df_vix_graph = get_stock_price("^VIX", "2021-01-01")
-    df_qqq_graph = get_stock_price("QQQ", "2021-01-01")
+    df_spy_graph = get_stock_price("SPY", "2021-01-01")
     df_xxx_graph = get_stock_price(symbol, "2021-01-01")
 
-    qqq_div = html.Div(
+    spy_div = html.Div(
         [
-#            html.H6(get_title("QQQ", df_qqq_graph), className="subtitle padded"),
+#            html.H6(get_title("SPY", df_spy_graph), className="subtitle padded"),
             dcc.Graph(
-                id="graph-qqq",
-                figure=display_chart("QQQ",df_qqq_graph),
+                id="graph-spy",
+                figure=display_chart("SPY", df_spy_graph),
                 config={"displayModeBar": False},
             )
         ]
@@ -234,7 +234,7 @@ def display_value(symbol):
 
     calls_table = html.Table(make_dash_table(call_options_df))
     puts_table = html.Table(make_dash_table(put_options_df))
-    return symbol_view, xxx_div, vix_div, qqq_div, calls_title, calls_table, puts_title, puts_table
+    return symbol_view, xxx_div, vix_div, spy_div, calls_title, calls_table, puts_title, puts_table
 
 @app.callback(
     Output("modal", "is_open"),
