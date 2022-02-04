@@ -235,6 +235,21 @@ li {
   padding-right: 60px;
 }
 
+.subtitle_green {
+  position: relative;
+  color: #3a3a3a;
+  left: 0;
+  height: 20%;
+  margin: 0mm;
+  border-left: 5px solid rgb(38, 103, 40);
+  background: #ffffff;
+  padding-top: 1px;
+  padding-bottom: 1px;
+  padding-left: 30px;
+  padding-right: 60px;
+}
+
+
 .logo {
   height: 30px;
   width: auto;

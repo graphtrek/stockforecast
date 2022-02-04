@@ -16,7 +16,8 @@ from utils import (
     make_dash_table,
     find_level_option_interests,
     calculate_levels,
-    get_last_price
+    get_last_price,
+    get_predictions
 )
 
 symbols = ['^TNX', 'QQQ', 'SPY', 'IWM', '^VIX', 'TSLA', 'VTI', 'XLE', 'XLF', 'TQQQ']
@@ -141,6 +142,72 @@ def display_value(symbol):
     df_spy_graph = get_stock_price("SPY", "2021-01-01")
     df_xxx_graph = get_stock_price(symbol, "2021-01-01")
 
+    close_price, last_date, prev_close_price = get_last_price(df_xxx_graph)
+    change = np.round(close_price - prev_close_price,2)
+    change_percent = np.round((change / prev_close_price) * 100, 1)
+    if change > 0:
+        symbol_view = html.B(
+            symbol + " " + str(close_price) + "$" + " (" + str(change_percent) + "%" + ") " + str(change) + "$",
+            className="symbol_view_green",
+            )
+    else:
+        symbol_view = html.B(
+            symbol + " " + str(close_price) + "$" + " (" + str(change_percent) + "%" + ") " + str(change) + "$",
+            className="symbol_view_red",
+            )
+
+    levels, close_price, min_level, max_level = calculate_levels(df_xxx_graph)
+
+    put_options_df = pd.DataFrame()
+    call_options_df = pd.DataFrame()
+    near_put_options_df, near_call_options_df = find_level_option_interests(symbol, min_level, max_level, 0, 45)
+    far_put_options_df, far_call_options_df = find_level_option_interests(symbol, min_level, max_level, 45, 365)
+
+    sum_call_options = 0
+    call_options_df = call_options_df.append(near_call_options_df)
+    call_options_df = call_options_df.append(far_call_options_df)
+    if len(call_options_df) > 0:
+        call_options_df = call_options_df.sort_values(by=['dte'])
+        sum_call_options = int(sum(call_options_df[['openInterest', 'volume']].sum(axis=1)))
+
+    calls_bull = False
+    puts_bull = False
+    sum_put_options = 0
+    put_options_df = put_options_df.append(near_put_options_df)
+    put_options_df = put_options_df.append(far_put_options_df)
+    if len(put_options_df) > 0:
+        put_options_df = put_options_df.sort_values(by=['dte'])
+        sum_put_options = int(sum(put_options_df[['openInterest', 'volume']].sum(axis=1)))
+
+    all_options = sum_call_options + sum_put_options
+    if all_options > 0:
+        put_options_percent = np.round((sum_put_options / all_options) * 100, 1)
+        call_options_percent = np.round((sum_call_options / all_options) * 100, 1)
+        max_calls_open_interest_index = call_options_df["openInterest"].idxmax()
+        calls_strike = call_options_df.loc[max_calls_open_interest_index]["strike"]
+
+        max_puts_open_interest_index = put_options_df["openInterest"].idxmax()
+        puts_strike = put_options_df.loc[max_puts_open_interest_index]["strike"]
+
+        calls_class_name = "subtitle"
+        puts_class_name = "subtitle"
+        if call_options_percent > 60 or calls_strike >= close_price:
+            calls_class_name = "subtitle_green"
+            calls_bull = True
+        if puts_strike >= close_price:
+            puts_class_name = "subtitle_green"
+            puts_bull = True
+
+        calls_title = html.H6(
+            ["CALL" + " " + str(call_options_percent) + "%" + " (" + '{:,}'.format(sum_call_options) + ")"],
+            className=calls_class_name + " padded")
+        puts_title = html.H6(
+            ["PUT" + " " + str(put_options_percent) + "%" + " (" + '{:,}'.format(sum_put_options) + ")"],
+            className=puts_class_name + " padded")
+    else:
+        calls_title = html.H6()
+        puts_title = html.H6(),
+
     spy_div = html.Div(
         [
 #            html.H6(get_title("SPY", df_spy_graph), className="subtitle padded"),
@@ -161,6 +228,18 @@ def display_value(symbol):
         )
     ])
 
+    indicators_test_prediction_df, indicators_prediction_df = get_predictions(symbol)
+
+    predictions_bull = False
+    if indicators_prediction_df is not None:
+        first_prediction = indicators_prediction_df['Prediction'][0]
+        mean_prediction = np.mean(indicators_prediction_df['Prediction'])
+        if mean_prediction >= first_prediction:
+            predictions_bull = True
+
+    xxx_class_name = "subtitle"
+    if puts_bull and calls_bull and predictions_bull:
+        xxx_class_name = "subtitle_green"
     xxx_div = html.Div([
         html.H6([get_title(symbol, df_xxx_graph),
                  " ",
@@ -175,62 +254,13 @@ def display_value(symbol):
                         target="_blank")
 
                  ],
-                className="subtitle padded"),
+                className=xxx_class_name + " padded"),
         dcc.Graph(
             id="graph-xxx",
-            figure=display_analyzer(symbol, df_xxx_graph),
+            figure=display_analyzer(symbol, df_xxx_graph, indicators_test_prediction_df, indicators_prediction_df),
             config={"displayModeBar": False},
         )
     ])
-
-    close_price, last_date, prev_close_price = get_last_price(df_xxx_graph)
-    change = np.round(close_price - prev_close_price,2)
-    change_percent = np.round((change / prev_close_price) * 100, 1)
-    if change > 0:
-        symbol_view = html.B(
-            symbol + " " + str(close_price) + "$" + " (" + str(change_percent) + "%" + ") " + str(change) + "$",
-            className="symbol_view_green",
-        )
-    else:
-        symbol_view = html.B(
-            symbol + " " + str(close_price) + "$" + " (" + str(change_percent) + "%" + ") " + str(change) + "$",
-            className="symbol_view_red",
-        )
-
-    levels, close_price, min_level, max_level = calculate_levels(df_xxx_graph)
-
-    put_options_df = pd.DataFrame()
-    call_options_df = pd.DataFrame()
-    near_put_options_df, near_call_options_df = find_level_option_interests(symbol, min_level, max_level, 0, 45)
-    far_put_options_df, far_call_options_df = find_level_option_interests(symbol, min_level, max_level, 45, 365)
-
-    all_call_options = 0
-    call_options_df = call_options_df.append(near_call_options_df)
-    call_options_df = call_options_df.append(far_call_options_df)
-    if len(call_options_df) > 0:
-        call_options_df = call_options_df.sort_values(by=['dte'])
-        all_call_options = int(sum(call_options_df[['openInterest', 'volume']].sum(axis=1)))
-
-    all_put_options = 0
-    put_options_df = put_options_df.append(near_put_options_df)
-    put_options_df = put_options_df.append(far_put_options_df)
-    if len(put_options_df) > 0:
-        put_options_df = put_options_df.sort_values(by=['dte'])
-        all_put_options = int(sum(put_options_df[['openInterest', 'volume']].sum(axis=1)))
-
-    all_options = all_call_options + all_put_options
-    if all_options > 0:
-        put_options_percent = np.round((all_put_options / all_options) * 100, 1)
-        call_options_percent = np.round((all_call_options / all_options) * 100, 1)
-        calls_title = html.H6(
-            ["CALL" + " " + str(call_options_percent) + "%" + " (" + '{:,}'.format(all_call_options) + ")"],
-            className="subtitle padded")
-        puts_title = html.H6(
-            ["PUT" + " " + str(put_options_percent) + "%" + " (" + '{:,}'.format(all_put_options) + ")"],
-            className="subtitle padded")
-    else:
-        calls_title = html.H6(["CALL"], className="subtitle padded")
-        puts_title = html.H6(["PUT"], className="subtitle padded"),
 
     calls_table = html.Table(make_dash_table(call_options_df))
     puts_table = html.Table(make_dash_table(put_options_df))

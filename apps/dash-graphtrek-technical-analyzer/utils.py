@@ -384,6 +384,12 @@ def display_chart(name,df):
             "rangeselector": {
                 "buttons": [
                     {
+                        "count": 7,
+                        "label": "1W",
+                        "step": "day",
+                        "stepmode": "backward"
+                    },
+                    {
                         "count": 1,
                         "label": "1M",
                         "step": "month",
@@ -483,7 +489,15 @@ def display_chart(name,df):
     return fig
 
 
-def display_analyzer(symbol, df):
+def get_predictions(symbol):
+    if os.path.exists("/home/nexys/graphtrek/stock/" + symbol + "_test_prediction.csv") and \
+            os.path.exists("/home/nexys/graphtrek/stock/" + symbol + "_prediction.csv"):
+        indicators_test_prediction_df = pd.read_csv("/home/nexys/graphtrek/stock/" + symbol + "_test_prediction.csv")
+        indicators_prediction_df = pd.read_csv("/home/nexys/graphtrek/stock/" + symbol + "_prediction.csv")
+        return indicators_test_prediction_df, indicators_prediction_df
+    return None, None
+
+def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_prediction_df):
 
     levels, close_price, min_level, max_level = calculate_levels(df)
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
@@ -564,7 +578,7 @@ def display_analyzer(symbol, df):
             #         },
             #     ]
             # },
-            "showline": False,
+            "showline": True,
             "type": "date",
             "zeroline": True
         }
@@ -644,35 +658,30 @@ def display_analyzer(symbol, df):
                              name='RSI(14)'
                              ), row=3, col=1)
 
-    if os.path.exists("/home/nexys/graphtrek/stock/" + symbol + "_test_prediction.csv") and \
-            os.path.exists("/home/nexys/graphtrek/stock/" + symbol + "_prediction.csv"):
-        indicators_test_prediction_df = pd.read_csv("/home/nexys/graphtrek/stock/" + symbol + "_test_prediction.csv")
-        indicators_prediction_df = pd.read_csv("/home/nexys/graphtrek/stock/" + symbol + "_prediction.csv")
+    if indicators_prediction_df is not None and indicators_test_prediction_df is not None:
+        fig.add_trace(go.Scatter(x=indicators_test_prediction_df['Date'],
+                                 y=indicators_test_prediction_df['Prediction'],
+                                 line=dict(color='firebrick', width=3, dash='dash'),
+                                 name='RSI(14) Test Predict'
+                                 ), row=3, col=1)
 
-        if indicators_prediction_df is not None and indicators_prediction_df is not None:
-            fig.add_trace(go.Scatter(x=indicators_test_prediction_df['Date'],
-                                     y=indicators_test_prediction_df['Prediction'],
-                                     line=dict(color='firebrick', width=3, dash='dash'),
-                                     name='RSI(14) Test Predict'
-                                     ), row=3, col=1)
+        fig.add_trace(go.Scatter(x=indicators_prediction_df.head(14)['Date'],
+                                 y=indicators_prediction_df.head(14)['Prediction'],
+                                 line=dict(color='firebrick', width=3, dash='dot'),
+                                 name='RSI(14) Future Predict'
+                                 ), row=3, col=1)
 
-            fig.add_trace(go.Scatter(x=indicators_prediction_df.head(14)['Date'],
-                                     y=indicators_prediction_df.head(14)['Prediction'],
-                                     line=dict(color='firebrick', width=3, dash='dot'),
-                                     name='RSI(14) Future Predict'
-                                     ), row=3, col=1)
+        first_prediction = indicators_prediction_df['Prediction'][0]
+        mean_prediction = np.mean(indicators_prediction_df['Prediction'])
+        print("first_prediction:", first_prediction, "mean_prediction:", mean_prediction)
 
-            first_prediction = indicators_prediction_df['Prediction'][0]
-            mean_prediction = np.mean(indicators_prediction_df['Prediction'])
-            print("first_prediction:", first_prediction, "mean_prediction:", mean_prediction)
-
-            fig.add_trace(go.Scatter(
-                x=[np.min(indicators_prediction_df['Date']), np.max(indicators_prediction_df.head(14)['Date'])],
-                y=[first_prediction, mean_prediction],
-                mode="lines",
-                line=dict(shape='linear', color='rgb(255, 153, 0)'),
-                name='RSI(14) mean prediction'
-            ), row=3, col=1)
+        fig.add_trace(go.Scatter(
+            x=[np.min(indicators_prediction_df['Date']), np.max(indicators_prediction_df.head(14)['Date'])],
+            y=[first_prediction, mean_prediction],
+            mode="lines",
+            line=dict(shape='linear', color='rgb(255, 153, 0)'),
+            name='RSI(14) mean prediction'
+        ), row=3, col=1)
 
     fig.add_trace(go.Scatter(
         x=[np.min(df['Date']), np.max(df['Date'])],
@@ -701,6 +710,6 @@ def display_analyzer(symbol, df):
     fig.update_layout(xaxis_rangeslider_visible=False)
     fig.update_xaxes(type="date", range=[start_date, end_date])
     fig.update_yaxes(range=[y_zoom_min, y_zoom_max], row=1, col=1)
-    fig.update_yaxes(showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')
-    fig.update_xaxes(showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')
+    fig.update_yaxes(showspikes=True, spikemode='across', spikedash='dash')
+    fig.update_xaxes(showspikes=True, spikemode='across', spikedash='dash')
     return fig
