@@ -13,6 +13,8 @@ import pandas as pd
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 import os.path
+import json
+
 
 twelve_months = date.today() + relativedelta(months=-12)
 eleven_months = date.today() + relativedelta(months=-11)
@@ -240,6 +242,17 @@ def calculate_levels(chart_df):
     return levels, close_price, min_level, max_level
 
 
+def get_info_dict(ticker):
+    file_path = "/home/nexys/graphtrek/stock/" + ticker.ticker + "_info.json"
+    file_exists = os.path.exists(file_path)
+    if file_exists is True:
+        f = open(file_path, "r")
+        info_dict = json.loads(f.read())
+        f.close()
+        return info_dict
+    return None
+
+
 def find_level_option_interests(symbol,min_level,max_level, dte_min, dte_max):
     file_path = "/home/nexys/graphtrek/stock/" + symbol + "_options.csv"
     file_exists = os.path.exists(file_path)
@@ -339,9 +352,9 @@ def get_title(ticker, df):
     title = ticker.ticker + " " + last_date + " Last Price:" + str(close_price) + "$ " + " Highest:" + str(
         ath) + "$ Discount:" + str(discount) + "$ (" + str(discount_percent) + "%)"
 
-    ticker_info = ticker.info
-    if 'sector' in ticker_info:
-        title += " " + str(ticker.info['sector'])
+    ticker_info = get_info_dict(ticker)
+    if ticker_info is not None and 'sector' in ticker_info:
+        title += " " + str(ticker_info['sector'])
     return html.A(title, href='https://in.tradingview.com/chart?symbol=' + ticker.ticker, target="_blank")
 
 
