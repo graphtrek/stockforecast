@@ -1,5 +1,6 @@
 from dash import dcc
 from dash import html
+import yfinance as yf
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import pandas as pd
@@ -28,7 +29,7 @@ symbols += ['ABBV', 'AFRM', 'AMD', 'AMZN', 'APPS', 'ASTR', 'ATVI', 'BNGO',
             'LVS', 'MSFT', 'MU', 'NCLH', 'NFLX', 'NKE', 'NVDA', 'PLTR', 'PYPL', 'XLNX',
             'RBLX', 'RKLB', 'SNAP', 'SOFI', 'SQ', 'TWTR', 'U', 'UBER', 'WFC', 'WBA', 'V']
 
-symbols += ['AAPL', 'ARKG', 'ARKK', 'ARKQ', 'BA', 'CHPT', 'COIN', 'DDOG',
+symbols += ['AAPL', 'ARKG', 'ARKK', 'ARKQ', 'BA', 'CHPT', 'COIN', 'DDOG', 'DT', 'PTON',
             'DOCU', 'EA', 'FB', 'GOOGL']
 
 symbols += ['MA', 'MP', 'MRNA', 'MSTR', 'MCD', 'NNDM', 'HOOD', 'MCD', 'MARA', 'F', 'MMM']
@@ -85,7 +86,8 @@ layout = html.Div(
                 # Row
                 html.Div(
                     [
-                        html.Div(id='page1-display-value')
+                        html.Div(id='page1-main-chart'),
+                        html.Div(id="page1-wheel-table")
                     ],
                     className="row ",
                 ),
@@ -124,10 +126,13 @@ layout = html.Div(
     className="page"
 )
 
+vix_ticker = yf.Ticker("^VIX")
+spy_ticker = yf.Ticker("SPY")
 
 @app.callback(
-    [Output('symbol','children'),
-     Output('page1-display-value', 'children'),
+    [Output('symbol', 'children'),
+     Output('page1-main-chart', 'children'),
+     Output('page1-wheel-table', 'children'),
      Output('vix', 'children'),
      Output('spy', 'children'),
      Output('calls_title', 'children'),
@@ -138,9 +143,10 @@ layout = html.Div(
 def display_value(symbol):
     if symbol is None:
         symbol = "TSLA"
-    df_vix_graph = get_stock_price("^VIX", "2021-01-01")
-    df_spy_graph = get_stock_price("SPY", "2021-01-01")
-    df_xxx_graph = get_stock_price(symbol, "2021-01-01")
+    ticker = yf.Ticker(symbol)
+    df_vix_graph = get_stock_price(vix_ticker, "2021-01-01")
+    df_spy_graph = get_stock_price(spy_ticker, "2021-01-01")
+    df_xxx_graph = get_stock_price(ticker, "2020-01-01")
 
     close_price, last_date, prev_close_price = get_last_price(df_xxx_graph)
     change = np.round(close_price - prev_close_price,2)
@@ -213,7 +219,7 @@ def display_value(symbol):
 #            html.H6(get_title("SPY", df_spy_graph), className="subtitle padded"),
             dcc.Graph(
                 id="graph-spy",
-                figure=display_chart("SPY", df_spy_graph),
+                figure=display_chart(spy_ticker, df_spy_graph),
                 config={"displayModeBar": False},
             )
         ]
@@ -223,7 +229,7 @@ def display_value(symbol):
 #        html.H6(get_title("VIX", df_vix_graph), className="subtitle padded"),
         dcc.Graph(
             id="graph-vix",
-            figure=display_chart("VIX",df_vix_graph),
+            figure=display_chart(vix_ticker,df_vix_graph),
             config={"displayModeBar": False},
         )
     ])
@@ -240,31 +246,43 @@ def display_value(symbol):
     xxx_class_name = "subtitle"
     if puts_bull and calls_bull and predictions_bull:
         xxx_class_name = "subtitle_green"
-    xxx_div = html.Div([
-        html.H6([get_title(symbol, df_xxx_graph),
-                 " ",
-                 html.A("TradingView",
-                        href='https://in.tradingview.com/chart?symbol=' + symbol,
-                        style={'font-family': 'Times New Roman, Times, serif', 'font-weight': 'bold'},
-                        target="_blank"),
-                 " ",
-                 html.A("SeekingAlpha",
-                        href='https://seekingalpha.com/symbol/' + symbol,
-                        style={'font-family': 'Times New Roman, Times, serif', 'font-weight': 'bold'},
-                        target="_blank")
+    xxx_div = html.Div(
+        [
+            html.H6([get_title(ticker, df_xxx_graph),
+                     " ",
+                     html.A("TradingView",
+                            href='https://in.tradingview.com/chart?symbol=' + symbol,
+                            style={'font-family': 'Times New Roman, Times, serif', 'font-weight': 'bold'},
+                            target="_blank"),
+                     " ",
+                     html.A("SeekingAlpha",
+                            href='https://seekingalpha.com/symbol/' + symbol,
+                            style={'font-family': 'Times New Roman, Times, serif', 'font-weight': 'bold'},
+                            target="_blank")
 
-                 ],
-                className=xxx_class_name + " padded"),
-        dcc.Graph(
-            id="graph-xxx",
-            figure=display_analyzer(symbol, df_xxx_graph, indicators_test_prediction_df, indicators_prediction_df),
-            config={"displayModeBar": False},
-        )
-    ])
+                     ],
+                    className=xxx_class_name + " padded"),
+            dcc.Graph(
+                id="graph-xxx",
+                figure=display_analyzer(symbol, df_xxx_graph, indicators_test_prediction_df, indicators_prediction_df),
+                config={"displayModeBar": False},
+            )
+        ],
+        className="ten columns")
+
+    wheel_div = html.Div(
+        [
+            html.H6(
+                ["Selling Puts"], className="subtitle padded"
+            ),
+            html.Table(),
+        ],
+        className="two columns",
+    )
 
     calls_table = html.Table(make_dash_table(call_options_df))
     puts_table = html.Table(make_dash_table(put_options_df))
-    return symbol_view, xxx_div, vix_div, spy_div, calls_title, calls_table, puts_title, puts_table
+    return symbol_view, xxx_div, wheel_div, vix_div, spy_div, calls_title, calls_table, puts_title, puts_table
 
 @app.callback(
     Output("modal", "is_open"),

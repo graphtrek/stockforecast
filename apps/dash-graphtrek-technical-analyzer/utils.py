@@ -18,6 +18,7 @@ twelve_months = date.today() + relativedelta(months=-12)
 eleven_months = date.today() + relativedelta(months=-11)
 six_months = date.today() + relativedelta(months=-6)
 five_months = date.today() + relativedelta(months=-5)
+three_months = date.today() + relativedelta(months=-3)
 one_month = date.today() + relativedelta(months=+1)
 fourteen_days = date.today() + relativedelta(days=+14)
 start_date = six_months.strftime("%Y-%m-%d")
@@ -177,8 +178,7 @@ def find_nearest_less_than(searchVal, inputData):
     return inputData[idx]
 
 
-def get_stock_price(ticker_name, from_date):
-    ticker = yf.Ticker(ticker_name)
+def get_stock_price(ticker, from_date):
     df = yf.download(ticker.ticker, start=from_date, interval="1d")
     # df = df.rename(columns={"Close": "Close1", "Adj Close": "Close"})
 
@@ -329,20 +329,23 @@ def get_last_price(df):
     return close_price, last_date, prev_close_price
 
 
-def get_title(name, df):
+def get_title(ticker, df):
     close_price, last_date, prev_close_price = get_last_price(df)
 
     ath = np.round(float(df['Adj Close'].max()))
     discount = np.round(ath - close_price, 1)
     discount_percent = np.round((discount / ath) * 100, 2)
 
-    title = name + " " + last_date + " Last Price:" + str(close_price) + "$ " + " Highest:" + str(
+    title = ticker.ticker + " " + last_date + " Last Price:" + str(close_price) + "$ " + " Highest:" + str(
         ath) + "$ Discount:" + str(discount) + "$ (" + str(discount_percent) + "%)"
 
-    return html.A(title, href='https://in.tradingview.com/chart?symbol=' + name, target="_blank")
+    ticker_info = ticker.info
+    if 'sector' in ticker_info:
+        title += " " + str(ticker.info['sector'])
+    return html.A(title, href='https://in.tradingview.com/chart?symbol=' + ticker.ticker, target="_blank")
 
 
-def display_chart(name,df):
+def display_chart(ticker, df):
     close_price, last_date, prev_close_price = get_last_price(df)
 
     fig = go.Figure(go.Scatter(
@@ -350,7 +353,7 @@ def display_chart(name,df):
         y=df["Close"],
         line={"color": "#97151c"},
         mode="lines",
-        name=name + " " + str(close_price) + "$"
+        name=ticker.ticker + " " + str(close_price) + "$"
     ))
     # zoom_df = df.iloc['Date' >= start_date]
 
@@ -377,10 +380,10 @@ def display_chart(name,df):
         },
         xaxis={
             #            "autorange": True,
-            "range": [
-                twelve_months,
-                date.today()
-            ],
+            # "range": [
+            #     twelve_months,
+            #     date.today()
+            # ],
             "rangeselector": {
                 "buttons": [
                     {
@@ -426,7 +429,8 @@ def display_chart(name,df):
         }
     )
 
-    if name == "VIX":
+    if ticker.ticker == "^VIX":
+        fig.update_xaxes(type="date", range=[three_months, date.today()])
         fig.add_trace(go.Scatter(
             x=[np.min(df['Date']), np.max(df['Date'])],
             y=[30, 30],
@@ -451,6 +455,7 @@ def display_chart(name,df):
             name='Hedge +22.5$'
         ))
     else:
+        fig.update_xaxes(type="date", range=[twelve_months, date.today()])
         ath = np.round(float(df['Close'].max()))
         pullback_level = np.round((ath * 0.95), 1)
         correction_level = np.round((ath * 0.9), 1)
