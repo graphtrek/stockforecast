@@ -242,57 +242,57 @@ def calculate_levels(chart_df):
     return levels, close_price, min_level, max_level
 
 
-def get_info_dict(ticker):
-    file_path = "/home/nexys/graphtrek/stock/" + ticker.ticker + "_info.json"
-    file_exists = os.path.exists(file_path)
-    if file_exists is True:
-        f = open(file_path, "r")
-        info_dict = json.loads(f.read())
-        f.close()
-        return info_dict
-    return None
-
-
-def find_level_option_interests(symbol,min_level,max_level, dte_min, dte_max):
+def load_options_df(symbol):
     file_path = "/home/nexys/graphtrek/stock/" + symbol + "_options.csv"
     file_exists = os.path.exists(file_path)
     if file_exists is True:
         options_df = pd.read_csv(file_path)
-        options_df['impliedVolatility'] = np.round(options_df['impliedVolatility'] * 100,2)
-        options_df['percentChange'] = np.round(options_df['percentChange'],2)
-        #expirationDates = options_df['expirationDate'].unique()
-        #print(sorted(expirationDates))
+        options_df['impliedVolatility'] = np.round(options_df['impliedVolatility'] * 100, 2)
+        options_df['percentChange'] = np.round(options_df['percentChange'], 2)
+        options_df = options_df.drop(
+                columns=['contractSize',
+                         'currency',
+                         'change',
+                         'percentChange',
+                         'lastTradeDate',
+                         'lastPrice',
+                         'inTheMoney',
+                         'contractSymbol'])
+        return options_df
+    return None
 
-        #PUT_options_df = pd.DataFrame()
-        #CALL_options_df = pd.DataFrame()
 
-        #for key, value in options_df.items():
-        #  date = key
-        #  rsi = float(value.get('RSI'))
-        #  rsi_data.append([date,rsi])
-        #  print('PUT OPTIONS', 'CLOSE PRICE:',close_price, 'SUPPORT -15%:', np.round(min_level * 0.85,2), 'RESISTANCE +15%:', np.round(max_level * 1.15,2))
+def find_level_option_interests(options_df, min_level, max_level, dte_min, dte_max):
+    print("find options min_level:", min_level, "max_level:", max_level, "dte_min:", dte_min, "dte_max:", dte_max)
+    if options_df is not None:
         new_header = options_df.columns #grab the first row for the header
-        PUT_options_df = options_df.query('CALL == False and strike>' + str(min_level * 0.8) + ' and strike<' + str(max_level * 1.2) + ' and dte>' + str(dte_min) + ' and dte<' + str(dte_max))
+        PUT_options_df = \
+            options_df.query(
+                'CALL == False and strike>' + str(min_level) +
+                ' and strike<' + str(max_level) +
+                ' and dte>' + str(dte_min) +
+                ' and dte<' + str(dte_max))
 
         put_max_openInterest_index = PUT_options_df["openInterest"].idxmax()
-        put_max_volume_index = PUT_options_df["volume"].idxmax()
+        #put_max_volume_index = PUT_options_df["volume"].idxmax()
         PUT_options_to_return_df = PUT_options_df.loc[put_max_openInterest_index:put_max_openInterest_index]
-        if put_max_volume_index != put_max_openInterest_index:
-            PUT_options_to_return_df = PUT_options_to_return_df.append(PUT_options_df.loc[put_max_volume_index:put_max_volume_index])
+        #if put_max_volume_index != put_max_openInterest_index:
+        #    PUT_options_to_return_df = \
+        #        PUT_options_to_return_df.append(PUT_options_df.loc[put_max_volume_index:put_max_volume_index])
         PUT_options_to_return_df.columns = new_header #set the header row as the df header
-        PUT_options_to_return_df = PUT_options_to_return_df.drop(columns = ['contractSize', 'CALL', 'currency','change','percentChange', 'lastTradeDate', 'lastPrice', 'inTheMoney','contractSymbol'])
+        PUT_options_to_return_df = PUT_options_to_return_df.drop(columns=['CALL'])
 
         #  print(tabulate(PUT_options_to_return_df, headers = 'keys', tablefmt = 'psql'))
 
         #  print('CALL OPTIONS', 'CLOSE PRICE:',close_price, 'SUPPORT -15%:', np.round(min_level * 0.85,2), 'RESISTANCE +15%:', np.round(max_level * 1.15,2))
-        CALL_options_df = options_df.query('CALL == True and strike>' + str(min_level * 0.5) + ' and strike<' + str(max_level * 1.5) + ' and dte>' + str(dte_min) + ' and dte<' + str(dte_max))
+        CALL_options_df = options_df.query('CALL == True and strike>' + str(min_level) + ' and strike<' + str(max_level) + ' and dte>' + str(dte_min) + ' and dte<' + str(dte_max))
         call_max_openInterest_index = CALL_options_df["openInterest"].idxmax()
-        call_max_volume_index = CALL_options_df["volume"].idxmax()
+        #call_max_volume_index = CALL_options_df["volume"].idxmax()
         CALL_options_to_return_df = CALL_options_df.loc[call_max_openInterest_index:call_max_openInterest_index]
-        if call_max_volume_index != call_max_openInterest_index:
-            CALL_options_to_return_df = CALL_options_to_return_df.append(CALL_options_df.loc[call_max_volume_index:call_max_volume_index])
+        #if call_max_volume_index != call_max_openInterest_index:
+        #    CALL_options_to_return_df = CALL_options_to_return_df.append(CALL_options_df.loc[call_max_volume_index:call_max_volume_index])
         CALL_options_to_return_df.columns = new_header #set the header row as the df header
-        CALL_options_to_return_df = CALL_options_to_return_df.drop(columns = ['contractSize', 'CALL', 'currency', 'change','percentChange', 'lastTradeDate', 'lastPrice', 'inTheMoney','contractSymbol'])
+        CALL_options_to_return_df = CALL_options_to_return_df.drop(columns=['CALL'])
         return PUT_options_to_return_df, CALL_options_to_return_df
     return None, None
 
@@ -303,32 +303,64 @@ def get_text(prefix, value, suffix):
     return ""
 
 
-def get_earnings(symbols):
+def get_info_dict(symbol):
+    file_path = "/home/nexys/graphtrek/stock/" + symbol + "_info.json"
+    file_exists = os.path.exists(file_path)
+    if file_exists is True:
+        f = open(file_path, "r")
+        info_dict = json.loads(f.read())
+        f.close()
+        return info_dict
+    return None
+
+
+def get_symbols_info_df(symbols):
     symbols_df = pd.DataFrame(symbols, columns=['Symbol'])
     earnings_list = []
+    info_list = []
     for symbol in symbols_df["Symbol"]:
-        file_path = "/home/nexys/graphtrek/stock/" + symbol + "_calendar.csv"
-        file_exists = os.path.exists(file_path)
-        if file_exists is True:
-            calendar_df = pd.read_csv(file_path)
+        calendar_file_path = "/home/nexys/graphtrek/stock/" + symbol + "_calendar.csv"
+        calendar_file_exists = os.path.exists(calendar_file_path)
+        if calendar_file_exists is True:
+            calendar_df = pd.read_csv(calendar_file_path)
             if calendar_df is not None:
+                earning_date_str = ""
+                nr_of_days = None
                 try:
                     earning_datetime_str = calendar_df.iloc[0][1]
                     earning_date_str = earning_datetime_str[0:10]
                     earning_date = datetime.strptime(earning_date_str, '%Y-%m-%d')
                     days = earning_date - datetime.today()
                     if days.days >= 0:
-                        earnings_list.append([earning_date_str, days.days])
-                    else:
-                        earnings_list.append(["", None])
+                        nr_of_days = days.days
                 except:
-                    earnings_list.append(["", None])
-            else:
-                earnings_list.append(["", None])
-        else:
-            earnings_list.append(["", None])
+                    None
+
+        earnings_list.append([earning_date_str, nr_of_days])
+
+        ticker_sector = ""
+        ticker_industry = ""
+        ticker_short_ratio = ""
+        info_file_path = "/home/nexys/graphtrek/stock/" + symbol + "_info.csv"
+        info_file_exists = os.path.exists(info_file_path)
+        if info_file_exists is True:
+            ticker_info = get_info_dict(symbol)
+            if ticker_info is not None:
+                if 'sector' in ticker_info:
+                    ticker_sector = ticker_info['sector']
+                if 'industry' in ticker_info:
+                    ticker_industry = ticker_info['industry']
+                if 'shortRatio' in ticker_info:
+                    ticker_short_ratio = str(ticker_info['shortRatio'])
+
+
+        info_list.append([ticker_sector, ticker_industry,ticker_short_ratio])
+
     earnings_array = np.array(earnings_list)
     symbols_df['Earning'], symbols_df['Day'] = earnings_array[:, 0], earnings_array[:, 1]
+    info_array = np.array(info_list)
+    symbols_df['Sector'], symbols_df['Industry'], symbols_df['ShortRatio'] = info_array[:, 0], info_array[:, 1], info_array[:, 2]
+    print(symbols_df)
     return symbols_df
 
 
@@ -351,10 +383,6 @@ def get_title(ticker, df):
 
     title = ticker.ticker + " " + last_date + " Last Price:" + str(close_price) + "$ " + " Highest:" + str(
         ath) + "$ Discount:" + str(discount) + "$ (" + str(discount_percent) + "%)"
-
-    ticker_info = get_info_dict(ticker)
-    if ticker_info is not None and 'sector' in ticker_info:
-        title += " " + str(ticker_info['sector'])
     return html.A(title, href='https://in.tradingview.com/chart?symbol=' + ticker.ticker, target="_blank")
 
 

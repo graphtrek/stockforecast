@@ -12,13 +12,14 @@ from utils import (
     get_title,
     display_chart,
     display_analyzer,
-    get_earnings,
+    get_symbols_info_df,
     get_text,
     make_dash_table,
     find_level_option_interests,
     calculate_levels,
     get_last_price,
-    get_predictions
+    get_predictions,
+    load_options_df
 )
 
 symbols = ['^TNX', 'QQQ', 'SPY', 'IWM', '^VIX', 'TSLA', 'VTI', 'XLE', 'XLF', 'TQQQ']
@@ -30,7 +31,7 @@ symbols += ['ABBV', 'AFRM', 'AMD', 'AMZN', 'APPS', 'ASTR', 'ATVI', 'BNGO',
             'RBLX', 'RKLB', 'SNAP', 'SOFI', 'SQ', 'TWTR', 'U', 'UBER', 'WFC', 'WBA', 'V']
 
 symbols += ['AAPL', 'ARKG', 'ARKK', 'ARKQ', 'BA', 'CHPT', 'COIN', 'DDOG', 'DT', 'PTON',
-            'DOCU', 'EA', 'FB', 'GOOGL']
+            'DOCU', 'EA', 'FB', 'GOOGL','ENPH','DT']
 
 symbols += ['MA', 'MP', 'MRNA', 'MSTR', 'MCD', 'NNDM', 'HOOD', 'MCD', 'MARA', 'F', 'MMM']
 
@@ -44,11 +45,17 @@ symbols.sort()
 
 
 def load_dropdown():
-    return get_earnings(symbols)
+    symbols_info_df = get_symbols_info_df(symbols)
+    return symbols_info_df
 
 
 def get_options_label(row):
-    return row['Symbol'] + " " + get_text("Earning:", row['Earning'], "") + get_text(" in ", row['Day'], " days")
+    return row['Symbol'] \
+           + " " + get_text("ShortRatio:", row['ShortRatio'], "") \
+           + " " + get_text("Earning:", row['Earning'], "") \
+           + " " + get_text("in ", row['Day'], " days") \
+           + " " + get_text("Sector:", row['Sector'], "") \
+           + " " + get_text("Industry:", row['Industry'], "")
 
 
 layout = html.Div(
@@ -164,13 +171,26 @@ def display_value(symbol):
 
     levels, close_price, min_level, max_level = calculate_levels(df_xxx_graph)
 
+    options_df = load_options_df(symbol)
     put_options_df = pd.DataFrame()
     call_options_df = pd.DataFrame()
-    near_put_options_df, near_call_options_df = find_level_option_interests(symbol, min_level, max_level, 0, 45)
-    far_put_options_df, far_call_options_df = find_level_option_interests(symbol, min_level, max_level, 45, 365)
+
+    wheel_put_options_df, wheel_call_options_df = \
+        find_level_option_interests(options_df, min_level * 0.9, close_price, 0, 14)
+
+    near_put_options_df, near_call_options_df = \
+        find_level_option_interests(options_df, min_level * 0.9, close_price * 1.1, 14, 45)
+
+    mid_put_options_df, mid_call_options_df = \
+        find_level_option_interests(options_df, min_level * 0.9, max_level * 1.1, 45, 180)
+
+    far_put_options_df, far_call_options_df = \
+        find_level_option_interests(options_df, min_level * 0.9, max_level * 1.1, 180, 365)
 
     sum_call_options = 0
+    call_options_df = call_options_df.append(wheel_call_options_df)
     call_options_df = call_options_df.append(near_call_options_df)
+    call_options_df = call_options_df.append(mid_call_options_df)
     call_options_df = call_options_df.append(far_call_options_df)
     if len(call_options_df) > 0:
         call_options_df = call_options_df.sort_values(by=['dte'])
@@ -179,7 +199,9 @@ def display_value(symbol):
     calls_bull = False
     puts_bull = False
     sum_put_options = 0
+    put_options_df = put_options_df.append(wheel_put_options_df)
     put_options_df = put_options_df.append(near_put_options_df)
+    put_options_df = put_options_df.append(mid_put_options_df)
     put_options_df = put_options_df.append(far_put_options_df)
     if len(put_options_df) > 0:
         put_options_df = put_options_df.sort_values(by=['dte'])

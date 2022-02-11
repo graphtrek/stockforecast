@@ -20,6 +20,7 @@ app.layout = serve_layout
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):
+    page1.load_dropdown()
     if pathname == '/dash-graphtrek-technical-analyzer/page1':
         return page1.layout
     else:
