@@ -76,7 +76,7 @@ layout = html.Div(
                                         {'label': get_options_label(row),
                                          'value': row['Symbol']} for index, row in load_dropdown().iterrows()
                                     ],
-                                    value="TSLA"
+                                    persistence=True, value="TSLA"
                                 )
                             ]
                         )
@@ -156,6 +156,10 @@ def display_value(symbol):
     df_spy_graph = get_stock_price(spy_ticker, "2021-01-01")
     df_xxx_graph = get_stock_price(ticker, "2020-01-01")
 
+    calls_class_name = "subtitle"
+    puts_class_name = "subtitle"
+    xxx_class_name = "subtitle"
+
     close_price, last_date, prev_close_price = get_last_price(df_xxx_graph)
     change = np.round(close_price - prev_close_price,2)
     change_percent = np.round((change / prev_close_price) * 100, 1)
@@ -166,7 +170,7 @@ def display_value(symbol):
             )
     else:
         symbol_view = html.B(
-            symbol + " $" + str(close_price) + " (" + str(change_percent) + "%" + ") $" + str(change),
+            symbol + " $" + str(close_price) + " (" + str(change_percent) + "%" + ") " + str(change),
             className="symbol_view_red",
             )
 
@@ -220,8 +224,6 @@ def display_value(symbol):
         #puts_strike = put_options_df.loc[max_puts_open_interest_index]["strike"]
         puts_strike = np.mean(put_options_df["strike"])
 
-        calls_class_name = "subtitle"
-        puts_class_name = "subtitle"
         if call_options_percent > 60 or calls_strike >= close_price:
             calls_class_name = "subtitle_green"
             calls_bull = True
@@ -268,7 +270,6 @@ def display_value(symbol):
         if mean_prediction >= first_prediction:
             predictions_bull = True
 
-    xxx_class_name = "subtitle"
     if puts_bull and calls_bull and predictions_bull:
         xxx_class_name = "subtitle_green"
     xxx_div = html.Div(

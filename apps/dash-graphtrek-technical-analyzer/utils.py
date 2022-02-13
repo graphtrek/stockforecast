@@ -689,7 +689,7 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
         mode="lines+text",
         line=dict(shape='linear', color='rgb(10, 120, 24)', dash='dot'),
         textfont=dict(size=12, color='black', family='Arial, sans-serif'),
-        name='Last Price:' + symbol,
+        name='Last Price:' + symbol + ' $' + str(close_price),
         showlegend=True,
         text=['', ' $' + str(close_price) + " (Last Price)", ''],
         textposition="top left"
@@ -762,7 +762,7 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
             y=[first_prediction, mean_prediction],
             mode="lines",
             line=dict(shape='linear', color='rgb(255, 153, 0)'),
-            name='RSI(14) mean prediction'
+            name='RSI(14) Mean Predict'
         ), row=3, col=1)
 
     fig.add_trace(go.Scatter(
@@ -770,7 +770,7 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
         y=[30, 30],
         mode="lines",
         line=dict(shape='linear', color='rgb(10, 120, 24)', dash='dash'),
-        name='RSI(14) over sold'
+        name='RSI(14) Over Sold'
     ), row=3, col=1)
 
     fig.add_trace(go.Scatter(
@@ -786,7 +786,7 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
         y=[70, 70],
         mode="lines",
         line=dict(shape='linear', color='rgb(100, 10, 100)', dash='dash'),
-        name='RSI(14) over bought'
+        name='RSI(14) Over Bought'
     ), row=3, col=1)
 
     fig.update_layout(xaxis_rangeslider_visible=False)
