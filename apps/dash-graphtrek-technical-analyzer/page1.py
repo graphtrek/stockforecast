@@ -161,7 +161,7 @@ def display_value(symbol):
     change_percent = np.round((change / prev_close_price) * 100, 1)
     if change > 0:
         symbol_view = html.B(
-            symbol + " $" + str(close_price) + " (" + str(change_percent) + "%" + ") $" + str(change),
+            symbol + " $" + str(close_price) + " (" + str(change_percent) + "%" + ") " + str(change),
             className="symbol_view_green",
             )
     else:
@@ -214,11 +214,11 @@ def display_value(symbol):
         call_options_percent = np.round((sum_call_options / all_options) * 100, 1)
         #max_calls_open_interest_index = call_options_df["openInterest"].idxmax()
         #calls_strike = call_options_df.loc[max_calls_open_interest_index]["strike"]
-        calls_strike = np.mean(call_options_df["openInterest"])
+        calls_strike = np.mean(call_options_df["strike"])
 
         #max_puts_open_interest_index = put_options_df["openInterest"].idxmax()
         #puts_strike = put_options_df.loc[max_puts_open_interest_index]["strike"]
-        puts_strike = np.mean(put_options_df["openInterest"])
+        puts_strike = np.mean(put_options_df["strike"])
 
         calls_class_name = "subtitle"
         puts_class_name = "subtitle"
