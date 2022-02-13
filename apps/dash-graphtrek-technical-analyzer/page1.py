@@ -212,11 +212,13 @@ def display_value(symbol):
     if all_options > 0:
         put_options_percent = np.round((sum_put_options / all_options) * 100, 1)
         call_options_percent = np.round((sum_call_options / all_options) * 100, 1)
-        max_calls_open_interest_index = call_options_df["openInterest"].idxmax()
-        calls_strike = call_options_df.loc[max_calls_open_interest_index]["strike"]
+        #max_calls_open_interest_index = call_options_df["openInterest"].idxmax()
+        #calls_strike = call_options_df.loc[max_calls_open_interest_index]["strike"]
+        calls_strike = np.mean(call_options_df["openInterest"])
 
-        max_puts_open_interest_index = put_options_df["openInterest"].idxmax()
-        puts_strike = put_options_df.loc[max_puts_open_interest_index]["strike"]
+        #max_puts_open_interest_index = put_options_df["openInterest"].idxmax()
+        #puts_strike = put_options_df.loc[max_puts_open_interest_index]["strike"]
+        puts_strike = np.mean(put_options_df["openInterest"])
 
         calls_class_name = "subtitle"
         puts_class_name = "subtitle"
@@ -320,7 +322,7 @@ def display_value(symbol):
     wheel_div = html.Div(
         [
             html.H6(
-                ["Selling Puts"], className="subtitle padded"
+                ["Selling Puts"], className=puts_class_name + " padded"
             ),
             html.Div(children=tables)
         ],

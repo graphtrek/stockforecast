@@ -396,7 +396,7 @@ def get_title(ticker, df):
 
     title = ticker.ticker + " " + last_date \
         + " Last Price:$" + str(close_price) \
-        + "$ Discount:$" + str(discount) + " (" + str(discount_percent) + "%)"
+        + " Discount:$" + str(discount) + " (" + str(discount_percent) + "%)"
     return html.A(title, href='https://in.tradingview.com/chart?symbol=' + ticker.ticker, target="_blank")
 
 
