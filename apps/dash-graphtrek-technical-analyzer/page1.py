@@ -161,12 +161,12 @@ def display_value(symbol):
     change_percent = np.round((change / prev_close_price) * 100, 1)
     if change > 0:
         symbol_view = html.B(
-            symbol + " " + str(close_price) + "$" + " (" + str(change_percent) + "%" + ") " + str(change) + "$",
+            symbol + " $" + str(close_price) + " (" + str(change_percent) + "%" + ") $" + str(change),
             className="symbol_view_green",
             )
     else:
         symbol_view = html.B(
-            symbol + " " + str(close_price) + "$" + " (" + str(change_percent) + "%" + ") " + str(change) + "$",
+            symbol + " $" + str(close_price) + " (" + str(change_percent) + "%" + ") $" + str(change),
             className="symbol_view_red",
             )
 
@@ -307,11 +307,11 @@ def display_value(symbol):
         wheel_df = pd.DataFrame({
             "label": ["Stock Price", "Expiration", "Strike", "Premium", "Price", "D.T.E"],
             "value": [
-                str('{:,}'.format(close_price)) + "$",
+                "$" + str('{:,}'.format(close_price)),
                 expiration,
-                str('{:,}'.format(strike)) + "$",
-                str('{:,}'.format(premium)) + "$",
-                str('{:,}'.format(price)) + "$" + " (" + str(discount_percent) + "%)",
+                "$" + str('{:,}'.format(strike)),
+                "$" + str('{:,}'.format(premium)),
+                "$" + str('{:,}'.format(price)) + " (" + str(discount_percent) + "%)",
                 str(dte) + " days"
             ]
         })

@@ -394,8 +394,9 @@ def get_title(ticker, df):
     discount = np.round(ath - close_price, 1)
     discount_percent = np.round((discount / ath) * 100, 2)
 
-    title = ticker.ticker + " " + last_date + " Last Price:" + str(close_price) + "$ " + " Highest:" + str(
-        ath) + "$ Discount:" + str(discount) + "$ (" + str(discount_percent) + "%)"
+    title = ticker.ticker + " " + last_date \
+        + " Last Price:$" + str(close_price) \
+        + "$ Discount:$" + str(discount) + " (" + str(discount_percent) + "%)"
     return html.A(title, href='https://in.tradingview.com/chart?symbol=' + ticker.ticker, target="_blank")
 
 
@@ -407,7 +408,7 @@ def display_chart(ticker, df):
         y=df["Close"],
         line={"color": "#97151c"},
         mode="lines",
-        name=ticker.ticker + " " + str(close_price) + "$"
+        name=ticker.ticker + " $" + str(close_price)
     ))
     # zoom_df = df.iloc['Date' >= start_date]
 
@@ -489,7 +490,7 @@ def display_chart(ticker, df):
         y=[close_price, close_price],
         mode="lines",
         line=dict(shape='linear', color='rgb(10, 120, 24)', dash='dot'),
-        name='Last Price:' + ticker.ticker
+        name='Last Price:' + ticker.ticker + ' $' + str(close_price)
     ))
 
     if ticker.ticker == "^VIX":
@@ -499,7 +500,7 @@ def display_chart(ticker, df):
             y=[30, 30],
             mode="lines",
             line=dict(shape='linear', color='rgb(255, 0, 0)'),
-            name='Panic +30$'
+            name='Panic +$30'
         ))
 
         fig.add_trace(go.Scatter(
@@ -507,7 +508,7 @@ def display_chart(ticker, df):
             y=[25, 25],
             mode="lines",
             line=dict(shape='linear', color='rgb(255, 187, 0)'),
-            name='Fear +25$'
+            name='Fear +$25'
         ))
 
         fig.add_trace(go.Scatter(
@@ -515,7 +516,7 @@ def display_chart(ticker, df):
             y=[22.5, 22.5],
             mode="lines",
             line=dict(shape='linear', color='rgb(0, 255, 42)'),
-            name='Hedge +22.5$'
+            name='Hedge +$22.5'
         ))
     else:
         fig.update_xaxes(type="date", range=[twelve_months, date.today()])
@@ -529,7 +530,7 @@ def display_chart(ticker, df):
             y=[pullback_level, pullback_level],
             mode="lines",
             line=dict(shape='linear', color='rgb(0, 255, 42)'),
-            name='Pullback ' + str(pullback_level) + '$'
+            name='Pullback $' + str(pullback_level)
         ))
 
         fig.add_trace(go.Scatter(
@@ -537,7 +538,7 @@ def display_chart(ticker, df):
             y=[correction_level, correction_level],
             mode="lines",
             line=dict(shape='linear', color='rgb(255, 187, 0)'),
-            name='Correction ' + str(correction_level) + '$'
+            name='Correction $' + str(correction_level)
         ))
 
         fig.add_trace(go.Scatter(
@@ -545,7 +546,7 @@ def display_chart(ticker, df):
             y=[crash_level, crash_level],
             mode="lines",
             line=dict(shape='linear', color='rgb(255, 0, 0)'),
-            name='Crash ' + str(crash_level) + '$'
+            name='Crash $' + str(crash_level)
         ))
 
 
@@ -582,7 +583,7 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
                                  high=df['High'],
                                  low=df['Low'],
                                  close=df['Close'],
-                                 name=symbol + " " + str(close_price) + "$",
+                                 name=symbol + " $" + str(close_price),
                                  showlegend=True), row=1, col=1)
     # zoom_df = df.iloc['Date' >= start_date]
 
@@ -685,9 +686,13 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
     fig.add_trace(go.Scatter(
         x=[np.min(df['Date']), np.max(df['Date'])],
         y=[close_price, close_price],
-        mode="lines",
+        mode="lines+text",
         line=dict(shape='linear', color='rgb(10, 120, 24)', dash='dot'),
-        name='Last Price:' + symbol
+        textfont=dict(size=12, color='black', family='Arial, sans-serif'),
+        name='Last Price:' + symbol,
+        showlegend=True,
+        text=['', ' $' + str(close_price) + " (Last Price)", ''],
+        textposition="top left"
     ), row=1, col=1)
 
 
@@ -715,7 +720,7 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
                 x=[df['Date'].min(), df['Date'].max()],
                 y=[level, level],
                 mode="lines+text",
-                name="Lines and Text",
+                name="Levels",
                 fill=line_fill,
                 showlegend=False,
                 text=['', '$' + str(np.round(current_level, 1)) + ' (' + str(np.round(percent, 1)) + '% disc:' + str(
