@@ -181,16 +181,16 @@ def display_value(symbol):
     call_options_df = pd.DataFrame()
 
     wheel_put_options_df, wheel_call_options_df = \
-        find_level_option_interests(options_df, min_level, max_level, 0, 14)
+        find_level_option_interests(options_df, min_level, max_level, 0, 21)
 
     near_put_options_df, near_call_options_df = \
-        find_level_option_interests(options_df, min_level, max_level, 14, 45)
+        find_level_option_interests(options_df, min_level, max_level, 21, 45)
 
     mid_put_options_df, mid_call_options_df = \
-        find_level_option_interests(options_df, min_level, max_level, 45, 180)
+        find_level_option_interests(options_df, min_level, max_level, 45, 76)
 
     far_put_options_df, far_call_options_df = \
-        find_level_option_interests(options_df, min_level, max_level, 180, 365)
+        find_level_option_interests(options_df, min_level, max_level, 76, 120)
 
     sum_call_options = 0
     call_options_df = call_options_df.append(wheel_call_options_df)

@@ -110,18 +110,18 @@ def make_options_table(df):
     """ Return a dash definition of an HTML table for a Pandas dataframe """
     table = []
     if df is not None and len(df) > 0:
-
         df = df.rename(columns={'openInterest': 'O.I.', 'impliedVolatility': 'I.V.', 'expirationDate': 'EXP.DATE'}, inplace=False)
         html_header_row = []
         for header in np.array(df.columns):
             html_header_row.append(html.Th([header.upper()]))
         table.append(html.Tr(html_header_row))
-        max_open_interest = df["O.I."].idxmax()
-        max_volume = df["volume"].idxmax()
         df['O.I.'] = df['O.I.'].fillna(0) #replace all NaN values with zeros
         df['O.I.'] = df['O.I.'].astype(int) #convert column from float to integer
         df['I.V.'] = df['I.V.'].fillna(0) #replace all NaN values with zeros
         df['I.V.'] = df['I.V.'].astype(int) #convert column from float to integer
+
+        max_open_interest = df["O.I."].idxmax()
+        max_volume = df["volume"].idxmax()
         for index, row in df.iterrows():
             html_row = []
             for i in range(len(row)):
@@ -286,26 +286,33 @@ def find_level_option_interests(options_df, min_level, max_level, dte_min, dte_m
                 ' and dte>' + str(dte_min) +
                 ' and dte<' + str(dte_max))
 
-        put_max_openInterest_index = PUT_options_df["openInterest"].idxmax()
-        #put_max_volume_index = PUT_options_df["volume"].idxmax()
-        PUT_options_to_return_df = PUT_options_df.loc[put_max_openInterest_index:put_max_openInterest_index]
-        #if put_max_volume_index != put_max_openInterest_index:
-        #    PUT_options_to_return_df = \
-        #        PUT_options_to_return_df.append(PUT_options_df.loc[put_max_volume_index:put_max_volume_index])
-        PUT_options_to_return_df.columns = new_header #set the header row as the df header
+        if len(PUT_options_df) > 1:
+            put_max_openInterest_index = PUT_options_df["openInterest"].idxmax()
+            #put_max_volume_index = PUT_options_df["volume"].idxmax()
+            PUT_options_to_return_df = PUT_options_df.loc[put_max_openInterest_index:put_max_openInterest_index]
+            #if put_max_volume_index != put_max_openInterest_index:
+            #    PUT_options_to_return_df = \
+            #        PUT_options_to_return_df.append(PUT_options_df.loc[put_max_volume_index:put_max_volume_index])
+            PUT_options_to_return_df.columns = new_header #set the header row as the df header
+        else:
+            PUT_options_to_return_df = pd.DataFrame(columns=new_header)
+
         PUT_options_to_return_df = PUT_options_to_return_df.drop(columns=['CALL'])
 
-        #  print(tabulate(PUT_options_to_return_df, headers = 'keys', tablefmt = 'psql'))
-
-        #  print('CALL OPTIONS', 'CLOSE PRICE:',close_price, 'SUPPORT -15%:', np.round(min_level * 0.85,2), 'RESISTANCE +15%:', np.round(max_level * 1.15,2))
         CALL_options_df = options_df.query('CALL == True and strike>' + str(min_level) + ' and strike<' + str(max_level) + ' and dte>' + str(dte_min) + ' and dte<' + str(dte_max))
-        call_max_openInterest_index = CALL_options_df["openInterest"].idxmax()
-        #call_max_volume_index = CALL_options_df["volume"].idxmax()
-        CALL_options_to_return_df = CALL_options_df.loc[call_max_openInterest_index:call_max_openInterest_index]
-        #if call_max_volume_index != call_max_openInterest_index:
-        #    CALL_options_to_return_df = CALL_options_to_return_df.append(CALL_options_df.loc[call_max_volume_index:call_max_volume_index])
-        CALL_options_to_return_df.columns = new_header #set the header row as the df header
+
+        if len(CALL_options_df) > 1:
+            call_max_openInterest_index = CALL_options_df["openInterest"].idxmax()
+            #call_max_volume_index = CALL_options_df["volume"].idxmax()
+            CALL_options_to_return_df = CALL_options_df.loc[call_max_openInterest_index:call_max_openInterest_index]
+            #if call_max_volume_index != call_max_openInterest_index:
+            #    CALL_options_to_return_df = CALL_options_to_return_df.append(CALL_options_df.loc[call_max_volume_index:call_max_volume_index])
+            CALL_options_to_return_df.columns = new_header #set the header row as the df header
+        else:
+            CALL_options_to_return_df = pd.DataFrame(columns=new_header)
+
         CALL_options_to_return_df = CALL_options_to_return_df.drop(columns=['CALL'])
+
         return PUT_options_to_return_df, CALL_options_to_return_df
     return None, None
 
