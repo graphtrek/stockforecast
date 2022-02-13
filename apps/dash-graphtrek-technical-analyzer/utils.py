@@ -98,6 +98,17 @@ def get_menu():
 def make_dash_table(df):
     """ Return a dash definition of an HTML table for a Pandas dataframe """
     table = []
+    for index, row in df.iterrows():
+        html_row = []
+        for i in range(len(row)):
+            html_row.append(html.Td([row[i]], style={"text-align": "left"}))
+        table.append(html.Tr(html_row))
+    return table
+
+
+def make_options_table(df):
+    """ Return a dash definition of an HTML table for a Pandas dataframe """
+    table = []
     if df is not None and len(df) > 0:
 
         df = df.rename(columns={'openInterest': 'O.I.', 'impliedVolatility': 'I.V.', 'expirationDate': 'EXP.DATE'}, inplace=False)
@@ -230,11 +241,13 @@ def calculate_levels(chart_df):
 
     levels = sorted(levels, reverse=True)
 
-    min_level = np.round(find_nearest_less_than(close_price, levels), 1)
+    min_level_0 = np.round(find_nearest_less_than(close_price, levels), 1)
+    min_level = np.round(find_nearest_less_than(min_level_0 * 0.99, levels), 1)
     if min_level > close_price:
         min_level = np.round(close_price, 1)
 
-    max_level = np.round(find_nearest_greater_than(close_price, levels), 1)
+    max_level_0 = np.round(find_nearest_greater_than(close_price, levels), 1)
+    max_level = np.round(find_nearest_greater_than(max_level_0 * 1.01, levels), 1)
     if max_level < close_price:
         max_level = np.round(close_price, 1)
 
@@ -470,6 +483,15 @@ def display_chart(ticker, df):
         }
     )
 
+
+    fig.add_trace(go.Scatter(
+        x=[np.min(df['Date']), np.max(df['Date'])],
+        y=[close_price, close_price],
+        mode="lines",
+        line=dict(shape='linear', color='rgb(10, 120, 24)', dash='dot'),
+        name='Last Price:' + ticker.ticker
+    ))
+
     if ticker.ticker == "^VIX":
         fig.update_xaxes(type="date", range=[three_months, date.today()])
         fig.add_trace(go.Scatter(
@@ -660,6 +682,15 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
                              line=dict(color='black', width=2),
                              name='MA 300'), row=1, col=1)
 
+    fig.add_trace(go.Scatter(
+        x=[np.min(df['Date']), np.max(df['Date'])],
+        y=[close_price, close_price],
+        mode="lines",
+        line=dict(shape='linear', color='rgb(10, 120, 24)', dash='dot'),
+        name='Last Price:' + symbol
+    ), row=1, col=1)
+
+
     ath_percent = 0
     if levels is not None:
         for idx, level in enumerate(levels):
@@ -674,7 +705,7 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
 
                 ath_diff = ath - current_level
                 ath_percent = (ath_diff / ath) * 100
-            if level <= (min_level * 0.99) or level >= (max_level * 1.01):
+            if level <= (min_level * 0.99) or level >= (max_level * 0.99):
                 line_color = 'rgba(100, 10, 100, 0.2)'
                 line_fill = None
             else:

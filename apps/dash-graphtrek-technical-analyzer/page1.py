@@ -15,6 +15,7 @@ from utils import (
     get_symbols_info_df,
     get_text,
     make_dash_table,
+    make_options_table,
     find_level_option_interests,
     calculate_levels,
     get_last_price,
@@ -176,16 +177,16 @@ def display_value(symbol):
     call_options_df = pd.DataFrame()
 
     wheel_put_options_df, wheel_call_options_df = \
-        find_level_option_interests(options_df, min_level * 0.9, close_price, 0, 14)
+        find_level_option_interests(options_df, min_level, max_level, 0, 14)
 
     near_put_options_df, near_call_options_df = \
-        find_level_option_interests(options_df, min_level * 0.9, close_price * 1.1, 14, 45)
+        find_level_option_interests(options_df, min_level, max_level, 14, 45)
 
     mid_put_options_df, mid_call_options_df = \
-        find_level_option_interests(options_df, min_level * 0.9, max_level * 1.1, 45, 180)
+        find_level_option_interests(options_df, min_level, max_level, 45, 180)
 
     far_put_options_df, far_call_options_df = \
-        find_level_option_interests(options_df, min_level * 0.9, max_level * 1.1, 180, 365)
+        find_level_option_interests(options_df, min_level, max_level, 180, 365)
 
     sum_call_options = 0
     call_options_df = call_options_df.append(wheel_call_options_df)
@@ -292,18 +293,42 @@ def display_value(symbol):
         ],
         className="ten columns")
 
+
+
+    tables = []
+    for index, row in put_options_df.iterrows():
+        expiration = row['expirationDate']
+        strike = row['strike']
+        mid = (float(row['ask']) + float(row['bid'])) / 2
+        dte = row["dte"]
+        premium = np.round(mid * 100, 2)
+        price = np.round(float(strike) - mid,2)
+        discount_percent = 100 - (np.round(price / close_price, 2) * 100)
+        wheel_df = pd.DataFrame({
+            "label": ["Stock Price", "Expiration", "Strike", "Premium", "Price", "D.T.E"],
+            "value": [
+                str('{:,}'.format(close_price)) + "$",
+                expiration,
+                str('{:,}'.format(strike)) + "$",
+                str('{:,}'.format(premium)) + "$",
+                str('{:,}'.format(price)) + "$" + " (" + str(discount_percent) + "%)",
+                str(dte) + " days"
+            ]
+        })
+        tables.append(html.Table(make_dash_table(wheel_df)))
+
     wheel_div = html.Div(
         [
             html.H6(
                 ["Selling Puts"], className="subtitle padded"
             ),
-            html.Table(),
+            html.Div(children=tables)
         ],
         className="two columns",
     )
 
-    calls_table = html.Table(make_dash_table(call_options_df))
-    puts_table = html.Table(make_dash_table(put_options_df))
+    calls_table = html.Table(make_options_table(call_options_df))
+    puts_table = html.Table(make_options_table(put_options_df))
     return symbol_view, xxx_div, wheel_div, vix_div, spy_div, calls_title, calls_table, puts_title, puts_table
 
 @app.callback(
