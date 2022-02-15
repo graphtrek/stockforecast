@@ -6,6 +6,7 @@ from dash.dependencies import Input, Output, State
 import pandas as pd
 import numpy as np
 from app import app
+from symbols import symbols
 from utils import (
     Header,
     get_stock_price,
@@ -22,27 +23,6 @@ from utils import (
     get_predictions,
     load_options_df
 )
-
-symbols = ['^TNX', 'QQQ', 'SPY', 'IWM', '^VIX', 'TSLA', 'VTI', 'XLE', 'XLF', 'TQQQ']
-symbols += ['BTC-USD', 'ETH-USD']
-symbols += ['ABBV', 'AFRM', 'AMD', 'AMZN', 'APPS', 'ASTR', 'ATVI', 'BNGO',
-            'CAT', 'CCL', 'CHWY', 'COST', 'CRM',
-            'DIA', 'DIS', 'DKNG', 'ETSY', 'FFND', 'HOG', 'HUT', 'JETS', 'LOGI',
-            'LVS', 'MSFT', 'MU', 'NCLH', 'NFLX', 'NKE', 'NVDA', 'PLTR', 'PYPL', 'XLNX',
-            'RBLX', 'RKLB', 'SNAP', 'SOFI', 'SQ', 'TWTR', 'U', 'UBER', 'WFC', 'WBA', 'V']
-
-symbols += ['AAPL', 'ARKG', 'ARKK', 'ARKQ', 'BA', 'CHPT', 'COIN', 'DDOG', 'DT', 'PTON',
-            'DOCU', 'EA', 'FB', 'GOOGL','ENPH','DT']
-
-symbols += ['MA', 'MP', 'MRNA', 'MSTR', 'MCD', 'NNDM', 'HOOD', 'MCD', 'MARA', 'F', 'MMM']
-
-symbols += ['PFE', 'PINS', 'ROKU', 'SBUX', 'SHOP', 'SOXL', 'SOXX']
-
-symbols += ['TDOC', 'TEN', 'TGT', 'TLT', 'TTD', 'UAA',
-            'VALE', 'WMT', 'WYNN', 'ZM']
-
-symbols += ['PENN', 'QCOM', 'LCID', 'AAL']
-symbols.sort()
 
 
 def load_dropdown():
@@ -137,6 +117,7 @@ layout = html.Div(
 vix_ticker = yf.Ticker("^VIX")
 spy_ticker = yf.Ticker("SPY")
 
+
 @app.callback(
     [Output('symbol', 'children'),
      Output('page1-main-chart', 'children'),
@@ -161,7 +142,7 @@ def display_value(symbol):
     xxx_class_name = "subtitle"
 
     close_price, last_date, prev_close_price = get_last_price(df_xxx_graph)
-    change = np.round(close_price - prev_close_price,2)
+    change = np.round(close_price - prev_close_price, 2)
     change_percent = np.round((change / prev_close_price) * 100, 1)
     if change > 0:
         symbol_view = html.B(
@@ -216,12 +197,12 @@ def display_value(symbol):
     if all_options > 0:
         put_options_percent = np.round((sum_put_options / all_options) * 100, 1)
         call_options_percent = np.round((sum_call_options / all_options) * 100, 1)
-        #max_calls_open_interest_index = call_options_df["openInterest"].idxmax()
-        #calls_strike = call_options_df.loc[max_calls_open_interest_index]["strike"]
+        # max_calls_open_interest_index = call_options_df["openInterest"].idxmax()
+        # calls_strike = call_options_df.loc[max_calls_open_interest_index]["strike"]
         calls_strike = np.mean(call_options_df["strike"])
 
-        #max_puts_open_interest_index = put_options_df["openInterest"].idxmax()
-        #puts_strike = put_options_df.loc[max_puts_open_interest_index]["strike"]
+        # max_puts_open_interest_index = put_options_df["openInterest"].idxmax()
+        # puts_strike = put_options_df.loc[max_puts_open_interest_index]["strike"]
         puts_strike = np.mean(put_options_df["strike"])
 
         if call_options_percent > 60 or calls_strike >= close_price:
@@ -243,7 +224,7 @@ def display_value(symbol):
 
     spy_div = html.Div(
         [
-#            html.H6(get_title("SPY", df_spy_graph), className="subtitle padded"),
+            # html.H6(get_title("SPY", df_spy_graph), className="subtitle padded"),
             dcc.Graph(
                 id="graph-spy",
                 figure=display_chart(spy_ticker, df_spy_graph),
@@ -253,10 +234,10 @@ def display_value(symbol):
     )
 
     vix_div = html.Div([
-#        html.H6(get_title("VIX", df_vix_graph), className="subtitle padded"),
+        # html.H6(get_title("VIX", df_vix_graph), className="subtitle padded"),
         dcc.Graph(
             id="graph-vix",
-            figure=display_chart(vix_ticker,df_vix_graph),
+            figure=display_chart(vix_ticker, df_vix_graph),
             config={"displayModeBar": False},
         )
     ])
@@ -296,8 +277,6 @@ def display_value(symbol):
         ],
         className="ten columns")
 
-
-
     tables = []
     for index, row in put_options_df.iterrows():
         expiration = row['expirationDate']
@@ -305,7 +284,7 @@ def display_value(symbol):
         mid = (float(row['ask']) + float(row['bid'])) / 2
         dte = row["dte"]
         premium = np.round(mid * 100, 2)
-        price = np.round(float(strike) - mid,2)
+        price = np.round(float(strike) - mid, 2)
         discount_percent = 100 - (np.round(price / close_price, 2) * 100)
         wheel_df = pd.DataFrame({
             "label": ["Stock Price", "Expiration", "Strike", "Premium", "Price", "D.T.E"],
@@ -333,6 +312,7 @@ def display_value(symbol):
     calls_table = html.Table(make_options_table(call_options_df))
     puts_table = html.Table(make_options_table(put_options_df))
     return symbol_view, xxx_div, wheel_div, vix_div, spy_div, calls_title, calls_table, puts_title, puts_table
+
 
 @app.callback(
     Output("modal", "is_open"),

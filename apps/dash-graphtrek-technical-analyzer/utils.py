@@ -15,7 +15,6 @@ from dateutil.relativedelta import relativedelta
 import os.path
 import json
 
-
 twelve_months = date.today() + relativedelta(months=-12)
 eleven_months = date.today() + relativedelta(months=-11)
 six_months = date.today() + relativedelta(months=-6)
@@ -110,15 +109,16 @@ def make_options_table(df):
     """ Return a dash definition of an HTML table for a Pandas dataframe """
     table = []
     if df is not None and len(df) > 0:
-        df = df.rename(columns={'openInterest': 'O.I.', 'impliedVolatility': 'I.V.', 'expirationDate': 'EXP.DATE'}, inplace=False)
+        df = df.rename(columns={'openInterest': 'O.I.', 'impliedVolatility': 'I.V.', 'expirationDate': 'EXP.DATE'},
+                       inplace=False)
         html_header_row = []
         for header in np.array(df.columns):
             html_header_row.append(html.Th([header.upper()]))
         table.append(html.Tr(html_header_row))
-        df['O.I.'] = df['O.I.'].fillna(0) #replace all NaN values with zeros
-        df['O.I.'] = df['O.I.'].astype(int) #convert column from float to integer
-        df['I.V.'] = df['I.V.'].fillna(0) #replace all NaN values with zeros
-        df['I.V.'] = df['I.V.'].astype(int) #convert column from float to integer
+        df['O.I.'] = df['O.I.'].fillna(0)  # replace all NaN values with zeros
+        df['O.I.'] = df['O.I.'].astype(int)  # convert column from float to integer
+        df['I.V.'] = df['I.V.'].fillna(0)  # replace all NaN values with zeros
+        df['I.V.'] = df['I.V.'].astype(int)  # convert column from float to integer
 
         max_open_interest = df["O.I."].idxmax()
         max_volume = df["volume"].idxmax()
@@ -263,14 +263,14 @@ def load_options_df(symbol):
         options_df['impliedVolatility'] = np.round(options_df['impliedVolatility'] * 100, 2)
         options_df['percentChange'] = np.round(options_df['percentChange'], 2)
         options_df = options_df.drop(
-                columns=['contractSize',
-                         'currency',
-                         'change',
-                         'percentChange',
-                         'lastTradeDate',
-                         'lastPrice',
-                         'inTheMoney',
-                         'contractSymbol'])
+            columns=['contractSize',
+                     'currency',
+                     'change',
+                     'percentChange',
+                     'lastTradeDate',
+                     'lastPrice',
+                     'inTheMoney',
+                     'contractSymbol'])
         return options_df
     return None
 
@@ -278,7 +278,7 @@ def load_options_df(symbol):
 def find_level_option_interests(options_df, min_level, max_level, dte_min, dte_max):
     print("find options min_level:", min_level, "max_level:", max_level, "dte_min:", dte_min, "dte_max:", dte_max)
     if options_df is not None:
-        new_header = options_df.columns #grab the first row for the header
+        new_header = options_df.columns  # grab the first row for the header
         PUT_options_df = \
             options_df.query(
                 'CALL == False and strike>' + str(min_level) +
@@ -288,26 +288,28 @@ def find_level_option_interests(options_df, min_level, max_level, dte_min, dte_m
 
         if len(PUT_options_df) > 1:
             put_max_openInterest_index = PUT_options_df["openInterest"].idxmax()
-            #put_max_volume_index = PUT_options_df["volume"].idxmax()
+            # put_max_volume_index = PUT_options_df["volume"].idxmax()
             PUT_options_to_return_df = PUT_options_df.loc[put_max_openInterest_index:put_max_openInterest_index]
-            #if put_max_volume_index != put_max_openInterest_index:
+            # if put_max_volume_index != put_max_openInterest_index:
             #    PUT_options_to_return_df = \
             #        PUT_options_to_return_df.append(PUT_options_df.loc[put_max_volume_index:put_max_volume_index])
-            PUT_options_to_return_df.columns = new_header #set the header row as the df header
+            PUT_options_to_return_df.columns = new_header  # set the header row as the df header
         else:
             PUT_options_to_return_df = pd.DataFrame(columns=new_header)
 
         PUT_options_to_return_df = PUT_options_to_return_df.drop(columns=['CALL'])
 
-        CALL_options_df = options_df.query('CALL == True and strike>' + str(min_level) + ' and strike<' + str(max_level) + ' and dte>' + str(dte_min) + ' and dte<' + str(dte_max))
+        CALL_options_df = options_df.query(
+            'CALL == True and strike>' + str(min_level) + ' and strike<' + str(max_level) + ' and dte>' + str(
+                dte_min) + ' and dte<' + str(dte_max))
 
         if len(CALL_options_df) > 1:
             call_max_openInterest_index = CALL_options_df["openInterest"].idxmax()
-            #call_max_volume_index = CALL_options_df["volume"].idxmax()
+            # call_max_volume_index = CALL_options_df["volume"].idxmax()
             CALL_options_to_return_df = CALL_options_df.loc[call_max_openInterest_index:call_max_openInterest_index]
-            #if call_max_volume_index != call_max_openInterest_index:
+            # if call_max_volume_index != call_max_openInterest_index:
             #    CALL_options_to_return_df = CALL_options_to_return_df.append(CALL_options_df.loc[call_max_volume_index:call_max_volume_index])
-            CALL_options_to_return_df.columns = new_header #set the header row as the df header
+            CALL_options_to_return_df.columns = new_header  # set the header row as the df header
         else:
             CALL_options_to_return_df = pd.DataFrame(columns=new_header)
 
@@ -338,6 +340,8 @@ def get_symbols_info_df(symbols):
     symbols_df = pd.DataFrame(symbols, columns=['Symbol'])
     earnings_list = []
     info_list = []
+    earning_date_str = ""
+    nr_of_days = None
     for symbol in symbols_df["Symbol"]:
         calendar_file_path = "/home/nexys/graphtrek/stock/" + symbol + "_calendar.csv"
         calendar_file_exists = os.path.exists(calendar_file_path)
@@ -373,13 +377,13 @@ def get_symbols_info_df(symbols):
                 if 'shortRatio' in ticker_info:
                     ticker_short_ratio = str(ticker_info['shortRatio'])
 
-
-        info_list.append([ticker_sector, ticker_industry,ticker_short_ratio])
+        info_list.append([ticker_sector, ticker_industry, ticker_short_ratio])
 
     earnings_array = np.array(earnings_list)
     symbols_df['Earning'], symbols_df['Day'] = earnings_array[:, 0], earnings_array[:, 1]
     info_array = np.array(info_list)
-    symbols_df['Sector'], symbols_df['Industry'], symbols_df['ShortRatio'] = info_array[:, 0], info_array[:, 1], info_array[:, 2]
+    symbols_df['Sector'], symbols_df['Industry'], symbols_df['ShortRatio'] = info_array[:, 0], info_array[:,
+                                                                                               1], info_array[:, 2]
     print(symbols_df)
     return symbols_df
 
@@ -390,7 +394,7 @@ def get_last_price(df):
     last_date = last_day_df['Date'].dt.strftime('%Y-%m-%d')
     close_price = np.round(float(df.iloc[-1:]['Adj Close']), 2)
     prev_close_price = np.round(float(before_last_day_df['Adj Close'].iloc[0]), 2)
-    #print(close_price, prev_close_price)
+    # print(close_price, prev_close_price)
     return close_price, last_date, prev_close_price
 
 
@@ -402,8 +406,8 @@ def get_title(ticker, df):
     discount_percent = np.round((discount / ath) * 100, 2)
 
     title = ticker.ticker + " " + last_date \
-        + " Last Price:$" + str(close_price) \
-        + " Discount:$" + str(discount) + " (" + str(discount_percent) + "%)"
+            + " Last Price:$" + str(close_price) \
+            + " Discount:$" + str(discount) + " (" + str(discount_percent) + "%)"
     return html.A(title, href='https://in.tradingview.com/chart?symbol=' + ticker.ticker, target="_blank")
 
 
@@ -491,7 +495,6 @@ def display_chart(ticker, df):
         }
     )
 
-
     fig.add_trace(go.Scatter(
         x=[np.min(df['Date']), np.max(df['Date'])],
         y=[close_price, close_price],
@@ -556,7 +559,6 @@ def display_chart(ticker, df):
             name='Crash $' + str(crash_level)
         ))
 
-
     fig.update_layout(xaxis_rangeslider_visible=False)
     #    fig.update_xaxes(type="date", range=[start_date, end_date])
     fig.update_yaxes(range=[y_zoom_min, y_zoom_max])
@@ -573,8 +575,8 @@ def get_predictions(symbol):
         return indicators_test_prediction_df, indicators_prediction_df
     return None, None
 
-def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_prediction_df):
 
+def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_prediction_df):
     levels, close_price, min_level, max_level = calculate_levels(df)
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
                         vertical_spacing=0.012,
@@ -701,7 +703,6 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
         text=['', ' $' + str(close_price) + " (Last Price)", ''],
         textposition="top left"
     ), row=1, col=1)
-
 
     ath_percent = 0
     if levels is not None:
