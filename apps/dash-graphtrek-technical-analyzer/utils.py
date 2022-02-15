@@ -14,6 +14,8 @@ from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 import os.path
 import json
+from dash_iconify import DashIconify
+
 
 twelve_months = date.today() + relativedelta(months=-12)
 eleven_months = date.today() + relativedelta(months=-11)
@@ -711,6 +713,8 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
             if idx == 0:
                 ath = level
             current_level = level
+            if current_level == 0:
+                current_level = 1
             if idx > 0:
                 prev_level = levels[idx - 1]
                 diff = prev_level - current_level

@@ -1,5 +1,7 @@
 symbols = ['^TNX', 'QQQ', 'SPY', 'IWM', '^VIX', 'TSLA', 'VTI', 'XLE', 'XLF', 'TQQQ']
+
 symbols += ['BTC-USD', 'ETH-USD']
+
 symbols += ['ABBV', 'AFRM', 'AMD', 'AMZN', 'APPS', 'ASTR', 'ATVI', 'BNGO',
             'CAT', 'CCL', 'CHWY', 'COST', 'CRM',
             'DIA', 'DIS', 'DKNG', 'ETSY', 'FFND', 'HOG', 'HUT', 'JETS', 'LOGI',
@@ -7,7 +9,7 @@ symbols += ['ABBV', 'AFRM', 'AMD', 'AMZN', 'APPS', 'ASTR', 'ATVI', 'BNGO',
             'RBLX', 'RKLB', 'SNAP', 'SOFI', 'SQ', 'TWTR', 'U', 'UBER', 'WFC', 'WBA', 'V']
 
 symbols += ['AAPL', 'ARKG', 'ARKK', 'ARKQ', 'BA', 'CHPT', 'COIN', 'DDOG', 'PTON',
-            'DOCU', 'EA', 'FB', 'GOOGL', 'ENPH', 'DT']
+            'DOCU', 'EA', 'FB', 'GOOGL', 'ENPH', 'DT', 'HTZ']
 
 symbols += ['MA', 'MP', 'MRNA', 'MSTR', 'MCD', 'NNDM', 'HOOD', 'MCD', 'MARA', 'F', 'MMM']
 
