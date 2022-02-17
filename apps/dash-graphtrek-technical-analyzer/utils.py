@@ -121,6 +121,8 @@ def make_options_table(df):
         df['O.I.'] = df['O.I.'].astype(int)  # convert column from float to integer
         df['I.V.'] = df['I.V.'].fillna(0)  # replace all NaN values with zeros
         df['I.V.'] = df['I.V.'].astype(int)  # convert column from float to integer
+        df['volume'] = df['volume'].fillna(0)  # replace all NaN values with zeros
+        df['volume'] = df['volume'].astype(int)  # convert column from float to integer
 
         max_open_interest = df["O.I."].idxmax()
         max_volume = df["volume"].idxmax()
@@ -216,8 +218,19 @@ def get_stock_price(ticker, from_date):
     df['MACD_DIFF'] = macd.macd_diff().to_numpy()
     df['MACD'] = macd.macd().to_numpy()
     df['MACD_SIGNAL'] = macd.macd_signal().to_numpy()
-    # df.to_csv('/home/nexys/graphtrek/stock/' + ticker.ticker + '.csv', index=False)
     print('Get Stock Price', ticker.ticker, 'done.')
+    return df
+
+
+def get_stock_price1(ticker, from_date):
+    file_path = '/home/nexys/graphtrek/stock/' + ticker.ticker + '.csv'
+    file_exists = os.path.exists(file_path)
+    if file_exists is True:
+        df = pd.read_csv(file_path, parse_dates=['Date'])
+        print('Get CACHED Stock Price', ticker.ticker, 'done.')
+    else:
+        df = get_stock_price(ticker, from_date)
+    df.to_csv(file_path, index=True)
     return df
 
 
@@ -273,20 +286,22 @@ def load_options_df(symbol):
                      'lastPrice',
                      'inTheMoney',
                      'contractSymbol'])
+        # options_df['strike'] = options_df['strike'].astype(float).round(decimals=1)
+        # options_df['strike'].round(decimals=1)
         return options_df
     return None
 
 
 def find_level_option_interests(options_df, min_level, max_level, dte_min, dte_max):
-    print("find options min_level:", min_level, "max_level:", max_level, "dte_min:", dte_min, "dte_max:", dte_max)
     if options_df is not None:
         new_header = options_df.columns  # grab the first row for the header
-        PUT_options_df = \
-            options_df.query(
-                'CALL == False and strike>' + str(min_level) +
-                ' and strike<' + str(max_level) +
-                ' and dte>' + str(dte_min) +
-                ' and dte<' + str(dte_max))
+        put_query = \
+            "CALL == False" \
+            " and strike>=" + str(int(min_level)) + \
+            " and strike<=" + str(int(max_level)) + \
+            " and dte>=" + str(dte_min) + \
+            " and dte<=" + str(dte_max)
+        PUT_options_df = options_df.query(put_query)
 
         if len(PUT_options_df) > 1:
             put_max_openInterest_index = PUT_options_df["openInterest"].idxmax()
@@ -296,14 +311,19 @@ def find_level_option_interests(options_df, min_level, max_level, dte_min, dte_m
             #    PUT_options_to_return_df = \
             #        PUT_options_to_return_df.append(PUT_options_df.loc[put_max_volume_index:put_max_volume_index])
             PUT_options_to_return_df.columns = new_header  # set the header row as the df header
+            print("PUT options found:", str(len(PUT_options_df)) + " query:", put_query)
         else:
+            print("No PUT options found query:", put_query)
             PUT_options_to_return_df = pd.DataFrame(columns=new_header)
 
         PUT_options_to_return_df = PUT_options_to_return_df.drop(columns=['CALL'])
-
-        CALL_options_df = options_df.query(
-            'CALL == True and strike>' + str(min_level) + ' and strike<' + str(max_level) + ' and dte>' + str(
-                dte_min) + ' and dte<' + str(dte_max))
+        call_query = \
+            "CALL == True" + \
+            " and strike>" + str(min_level) + \
+            " and strike<" + str(max_level) + \
+            " and dte>" + str(dte_min) + \
+            " and dte<" + str(dte_max)
+        CALL_options_df = options_df.query(call_query)
 
         if len(CALL_options_df) > 1:
             call_max_openInterest_index = CALL_options_df["openInterest"].idxmax()
@@ -312,12 +332,15 @@ def find_level_option_interests(options_df, min_level, max_level, dte_min, dte_m
             # if call_max_volume_index != call_max_openInterest_index:
             #    CALL_options_to_return_df = CALL_options_to_return_df.append(CALL_options_df.loc[call_max_volume_index:call_max_volume_index])
             CALL_options_to_return_df.columns = new_header  # set the header row as the df header
+            print("CALL options found:", str(len(CALL_options_df)) + " query:", call_query)
         else:
+            print("No CALL options found query:", put_query)
             CALL_options_to_return_df = pd.DataFrame(columns=new_header)
 
         CALL_options_to_return_df = CALL_options_to_return_df.drop(columns=['CALL'])
 
         return PUT_options_to_return_df, CALL_options_to_return_df
+    print("options df is empty")
     return None, None
 
 
@@ -342,36 +365,17 @@ def get_symbols_info_df(symbols):
     symbols_df = pd.DataFrame(symbols, columns=['Symbol'])
     earnings_list = []
     info_list = []
-    earning_date_str = ""
-    nr_of_days = None
+    quote_type = "EQUITY"
     for symbol in symbols_df["Symbol"]:
-        calendar_file_path = "/home/nexys/graphtrek/stock/" + symbol + "_calendar.csv"
-        calendar_file_exists = os.path.exists(calendar_file_path)
-        if calendar_file_exists is True:
-            calendar_df = pd.read_csv(calendar_file_path)
-            if calendar_df is not None:
-                earning_date_str = ""
-                nr_of_days = None
-                try:
-                    earning_datetime_str = calendar_df.iloc[0][1]
-                    earning_date_str = earning_datetime_str[0:10]
-                    earning_date = datetime.strptime(earning_date_str, '%Y-%m-%d')
-                    days = earning_date - datetime.today()
-                    if days.days >= 0:
-                        nr_of_days = days.days
-                except:
-                    None
-
-        earnings_list.append([earning_date_str, nr_of_days])
-
         ticker_sector = ""
         ticker_industry = ""
         ticker_short_ratio = ""
-        info_file_path = "/home/nexys/graphtrek/stock/" + symbol + "_info.csv"
+        info_file_path = "/home/nexys/graphtrek/stock/" + symbol + "_info.json"
         info_file_exists = os.path.exists(info_file_path)
         if info_file_exists is True:
             ticker_info = get_info_dict(symbol)
             if ticker_info is not None:
+                quote_type = ticker_info['quoteType']
                 if 'sector' in ticker_info:
                     ticker_sector = ticker_info['sector']
                 if 'industry' in ticker_info:
@@ -380,6 +384,28 @@ def get_symbols_info_df(symbols):
                     ticker_short_ratio = str(ticker_info['shortRatio'])
 
         info_list.append([ticker_sector, ticker_industry, ticker_short_ratio])
+
+        earning_date_str = ""
+        nr_of_days = None
+        if quote_type == "EQUITY":
+            calendar_file_path = "/home/nexys/graphtrek/stock/" + symbol + "_calendar.csv"
+            calendar_file_exists = os.path.exists(calendar_file_path)
+            if calendar_file_exists is True:
+                calendar_df = pd.read_csv(calendar_file_path)
+                if calendar_df is not None:
+                    earning_date_str = ""
+                    nr_of_days = None
+                    try:
+                        earning_datetime_str = calendar_df.iloc[0][1]
+                        earning_date_str = earning_datetime_str[0:10]
+                        earning_date = datetime.strptime(earning_date_str, '%Y-%m-%d')
+                        days = earning_date - datetime.today()
+                        if days.days >= 0:
+                            nr_of_days = days.days
+                    except:
+                        None
+
+        earnings_list.append([earning_date_str, nr_of_days])
 
     earnings_array = np.array(earnings_list)
     symbols_df['Earning'], symbols_df['Day'] = earnings_array[:, 0], earnings_array[:, 1]
@@ -765,8 +791,8 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
                                  name='RSI(14) Future Predict'
                                  ), row=3, col=1)
 
-        first_prediction = indicators_prediction_df['Prediction'][0]
-        mean_prediction = np.mean(indicators_prediction_df['Prediction'])
+        first_prediction = np.round(indicators_prediction_df['Prediction'][0])
+        mean_prediction = np.round(np.mean(indicators_prediction_df['Prediction']))
         print("first_prediction:", first_prediction, "mean_prediction:", mean_prediction)
 
         fig.add_trace(go.Scatter(
