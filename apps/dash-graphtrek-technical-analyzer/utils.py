@@ -63,8 +63,9 @@ def get_header(app):
             html.Div(
                 [
                     html.Div(
-                        [html.H5("Graphtrek Technical Analyzer")],
-                        className="seven columns main-title",
+                        [
+                            html.H5(id="symbol_name", children=["Graphtrek Technical Analyzer"])
+                        ], className="seven columns main-title",
                     ),
                     html.Div(id="symbol", className="five columns")
                 ],
@@ -370,6 +371,8 @@ def get_symbols_info_df(symbols):
         ticker_sector = ""
         ticker_industry = ""
         ticker_short_ratio = ""
+        recommendation_key = ""
+        short_name = ""
         info_file_path = "/home/nexys/graphtrek/stock/" + symbol + "_info.json"
         info_file_exists = os.path.exists(info_file_path)
         if info_file_exists is True:
@@ -382,8 +385,12 @@ def get_symbols_info_df(symbols):
                     ticker_industry = ticker_info['industry']
                 if 'shortRatio' in ticker_info:
                     ticker_short_ratio = str(ticker_info['shortRatio'])
+                if 'recommendationKey' in ticker_info:
+                    recommendation_key = str(ticker_info['recommendationKey'])
+                if 'shortName' in ticker_info:
+                    short_name = str(ticker_info['shortName'])
 
-        info_list.append([ticker_sector, ticker_industry, ticker_short_ratio])
+        info_list.append([ticker_sector, ticker_industry, ticker_short_ratio, recommendation_key, short_name])
 
         earning_date_str = ""
         nr_of_days = None
@@ -410,8 +417,18 @@ def get_symbols_info_df(symbols):
     earnings_array = np.array(earnings_list)
     symbols_df['Earning'], symbols_df['Day'] = earnings_array[:, 0], earnings_array[:, 1]
     info_array = np.array(info_list)
-    symbols_df['Sector'], symbols_df['Industry'], symbols_df['ShortRatio'] = info_array[:, 0], info_array[:,
-                                                                                               1], info_array[:, 2]
+
+    symbols_df['Sector'], \
+        symbols_df['Industry'],\
+        symbols_df['ShortRatio'], \
+        symbols_df['Recommendation'], \
+        symbols_df['Name'] = \
+        info_array[:, 0], \
+        info_array[:, 1], \
+        info_array[:, 2], \
+        info_array[:, 3],\
+        info_array[:, 4]
+
     print(symbols_df)
     return symbols_df
 
@@ -449,6 +466,12 @@ def display_chart(ticker, df):
         mode="lines",
         name=ticker.ticker + " $" + str(close_price)
     ))
+
+    fig.update_layout({
+        'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+        'paper_bgcolor': 'rgba(0, 0, 0, 0)',
+    })
+
     # zoom_df = df.iloc['Date' >= start_date]
 
     zoom_df = df[df.Date >= twelve_months.strftime("%Y-%m-%d")]
@@ -517,9 +540,16 @@ def display_chart(ticker, df):
                     },
                 ]
             },
+            "autorange": True,
             "showline": True,
             "type": "date",
             "zeroline": False
+        },
+        yaxis={
+            "autorange": True,
+            "showline": True,
+            "type": "linear",
+            "zeroline": False,
         }
     )
 
@@ -590,8 +620,8 @@ def display_chart(ticker, df):
     fig.update_layout(xaxis_rangeslider_visible=False)
     #    fig.update_xaxes(type="date", range=[start_date, end_date])
     fig.update_yaxes(range=[y_zoom_min, y_zoom_max])
-    fig.update_yaxes(showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')
-    fig.update_xaxes(showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='LightPink', showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')
+    fig.update_xaxes(showgrid=True,  gridwidth=1, gridcolor='LightPink', showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')
     return fig
 
 
@@ -614,6 +644,11 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
                             [{"type": "bar"}],
                             [{"type": "scatter"}]
                         ])
+
+    fig.update_layout({
+        'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+        'paper_bgcolor': 'rgba(0, 0, 0, 0)',
+    })
 
     fig.add_trace(go.Candlestick(x=df['Date'],
                                  open=df['Open'],
@@ -687,7 +722,13 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
             "showline": True,
             "type": "date",
             "zeroline": True
-        }
+        },
+        # yaxis={
+        #     "autorange": True,
+        #     "showline": True,
+        #     "type": "linear",
+        #     "zeroline": False,
+        # }
     )
 
     # add moving average traces
@@ -751,9 +792,11 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
             if level <= (min_level * 0.99) or level >= (max_level * 0.99):
                 line_color = 'rgba(100, 10, 100, 0.2)'
                 line_fill = None
+                line_width = 1
             else:
-                line_color = 'rgba(128,128,128,1)'
-                line_fill = 'tonexty'
+                line_color = 'rgba(51, 102, 153, 1)'
+                line_fill = None  # 'tonexty'
+                line_width = 2
             fig.add_trace(go.Scatter(
                 x=[df['Date'].min(), df['Date'].max()],
                 y=[level, level],
@@ -764,7 +807,7 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
                 text=['', '$' + str(np.round(current_level, 1)) + ' (' + str(np.round(percent, 1)) + '% disc:' + str(
                     np.round(ath_percent, 1)) + '%)', ''],
                 textposition="top right",
-                line=dict(shape='linear', color=line_color, dash='dash', width=1)
+                line=dict(shape='linear', color=line_color, dash='dash', width=line_width)
             ), row=1, col=1)
 
     # Volume
@@ -832,4 +875,5 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
     fig.update_yaxes(range=[y_zoom_min, y_zoom_max], row=1, col=1)
     fig.update_yaxes(showspikes=True, spikemode='across', spikedash='dash')
     fig.update_xaxes(showspikes=True, spikemode='across', spikedash='dash')
+
     return fig

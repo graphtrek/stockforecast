@@ -4,7 +4,10 @@ from dash.dependencies import Input, Output
 
 from app import app
 import page1
-
+from symbols import symbols
+from utils import (
+    get_symbols_info_df,
+)
 
 
 def serve_layout():
@@ -20,7 +23,7 @@ app.layout = serve_layout
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):
-    page1.load_dropdown()
+    page1.symbols_info_df = get_symbols_info_df(symbols)
     if pathname == '/dash-graphtrek-technical-analyzer/page1':
         return page1.layout
     else:

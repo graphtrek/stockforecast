@@ -25,18 +25,18 @@ from utils import (
 )
 
 
-def load_dropdown():
-    symbols_info_df = get_symbols_info_df(symbols)
-    return symbols_info_df
+symbols_info_df = get_symbols_info_df(symbols)
 
 
 def get_options_label(row):
     return row['Symbol'] \
-           + " " + get_text("ShortRatio:", row['ShortRatio'], "") \
-           + " " + get_text("Earning:", row['Earning'], "") \
-           + " " + get_text("in ", row['Day'], " days") \
-           + " " + get_text("Sector:", row['Sector'], "") \
-           + " " + get_text("Industry:", row['Industry'], "")
+            + " " + get_text("", row['Name'], "") \
+            + " " + get_text("ShortRatio:", row['ShortRatio'], "") \
+            + " " + get_text("", row['Recommendation'], "").upper() \
+            + " " + get_text("Earning:", row['Earning'], "") \
+            + " " + get_text("in ", row['Day'], " days") \
+            + " " + get_text("Sector:", row['Sector'], "") \
+            + " " + get_text("Industry:", row['Industry'], "")
 
 
 layout = html.Div(
@@ -54,7 +54,7 @@ layout = html.Div(
                                     id='page1-dropdown',
                                     options=[
                                         {'label': get_options_label(row),
-                                         'value': row['Symbol']} for index, row in load_dropdown().iterrows()
+                                         'value': row['Symbol']} for index, row in symbols_info_df.iterrows()
                                     ],
                                     persistence=True, value="TSLA"
                                 )
@@ -228,7 +228,7 @@ def display_value(symbol):
             dcc.Graph(
                 id="graph-spy",
                 figure=display_chart(spy_ticker, df_spy_graph),
-                config={"displayModeBar": False},
+                config={"displayModeBar": False, "scrollZoom": True},
             )
         ]
     )
@@ -238,7 +238,7 @@ def display_value(symbol):
         dcc.Graph(
             id="graph-vix",
             figure=display_chart(vix_ticker, df_vix_graph),
-            config={"displayModeBar": False},
+            config={"displayModeBar": False, "scrollZoom": True},
         )
     ])
 
@@ -272,7 +272,7 @@ def display_value(symbol):
             dcc.Graph(
                 id="graph-xxx",
                 figure=display_analyzer(symbol, df_xxx_graph, indicators_test_prediction_df, indicators_prediction_df),
-                config={"displayModeBar": False},
+                config={"displayModeBar": False, "scrollZoom": True},
             )
         ],
         className="ten columns")
