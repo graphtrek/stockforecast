@@ -27,7 +27,7 @@ def get_symbols_info():
                 print('Get info', ticker.ticker, 'error.', e)
 
 
-def get_symbols_info_df():
+def get_symbols_options_chain():
     print("get_symbols_info_df running")
     for symbol in symbols:
         ticker = yf.Ticker(symbol)
@@ -104,7 +104,7 @@ def options_chain(ticker):
 
 
 def schedule_options():
-    schedule.every(1).minutes.until("22:00").do(get_symbols_info_df)
+    schedule.every(1).minutes.until("21:50").do(get_symbols_options_chain)
     while True:
         schedule.run_pending()
         time.sleep(1)

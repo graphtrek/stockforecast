@@ -33,6 +33,7 @@ def get_options_label(row):
             + " " + get_text("", row['Name'], "") \
             + " " + get_text("ShortRatio:", row['ShortRatio'], "") \
             + " " + get_text("", row['Recommendation'], "").upper() \
+            + " " + get_text("TargetPrice:", row['TargetPrice'], "") \
             + " " + get_text("Earning:", row['Earning'], "") \
             + " " + get_text("in ", row['Day'], " days") \
             + " " + get_text("Sector:", row['Sector'], "") \
@@ -272,7 +273,7 @@ def display_value(symbol):
             dcc.Graph(
                 id="graph-xxx",
                 figure=display_analyzer(symbol, df_xxx_graph, indicators_test_prediction_df, indicators_prediction_df),
-                config={"displayModeBar": False, "scrollZoom": True},
+                config={"displayModeBar": False, "scrollZoom": False},
             )
         ],
         className="ten columns")
@@ -284,17 +285,19 @@ def display_value(symbol):
         mid = (float(row['ask']) + float(row['bid'])) / 2
         dte = row["dte"]
         premium = np.round(mid * 100, 2)
-        price = np.round(float(strike) - mid, 2)
-        discount_percent = 100 - (np.round(price / close_price, 2) * 100)
+        sell_price = np.round(float(strike) - mid, 2)
+        buy_price = np.round(float(strike) + mid, 2)
+
+        discount_percent = np.round(100 - ((close_price / sell_price) * 100),2)
         wheel_df = pd.DataFrame({
-            "label": ["Stock Price", "Expiration", "Strike", "Premium", "Price", "D.T.E"],
+            "label": ["Stock Price", "Expiration", "Strike", "Premium", "Sell", "Buy"],
             "value": [
                 "$" + str('{:,}'.format(close_price)),
-                expiration,
+                expiration + " in " + str(dte) + " days",
                 "$" + str('{:,}'.format(strike)),
                 "$" + str('{:,}'.format(premium)),
-                "$" + str('{:,}'.format(price)) + " (" + str(discount_percent) + "%)",
-                str(dte) + " days"
+                "$" + str('{:,}'.format(sell_price)) + " (" + str(discount_percent) + "%)",
+                "$" + str('{:,}'.format(buy_price))
             ]
         })
         tables.append(html.Table(make_dash_table(wheel_df)))
@@ -302,7 +305,7 @@ def display_value(symbol):
     wheel_div = html.Div(
         [
             html.H6(
-                ["Selling Puts"], className=puts_class_name + " padded"
+                ["Puts"], className=puts_class_name + " padded"
             ),
             html.Div(children=tables)
         ],

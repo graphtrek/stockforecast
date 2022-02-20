@@ -298,7 +298,7 @@ def find_level_option_interests(options_df, min_level, max_level, dte_min, dte_m
         new_header = options_df.columns  # grab the first row for the header
         put_query = \
             "CALL == False" \
-            " and strike>=" + str(int(min_level)) + \
+            " and strike>" + str(int(min_level)) + \
             " and strike<=" + str(int(max_level)) + \
             " and dte>=" + str(dte_min) + \
             " and dte<=" + str(dte_max)
@@ -373,6 +373,7 @@ def get_symbols_info_df(symbols):
         ticker_short_ratio = ""
         recommendation_key = ""
         short_name = ""
+        target_price = ""
         info_file_path = "/home/nexys/graphtrek/stock/" + symbol + "_info.json"
         info_file_exists = os.path.exists(info_file_path)
         if info_file_exists is True:
@@ -389,8 +390,10 @@ def get_symbols_info_df(symbols):
                     recommendation_key = str(ticker_info['recommendationKey'])
                 if 'shortName' in ticker_info:
                     short_name = str(ticker_info['shortName'])
+                if 'targetMedianPrice' in ticker_info:
+                    target_price = str(ticker_info['targetMedianPrice'])
 
-        info_list.append([ticker_sector, ticker_industry, ticker_short_ratio, recommendation_key, short_name])
+        info_list.append([ticker_sector, ticker_industry, ticker_short_ratio, recommendation_key, short_name, target_price])
 
         earning_date_str = ""
         nr_of_days = None
@@ -422,12 +425,14 @@ def get_symbols_info_df(symbols):
         symbols_df['Industry'],\
         symbols_df['ShortRatio'], \
         symbols_df['Recommendation'], \
-        symbols_df['Name'] = \
+        symbols_df['Name'], \
+        symbols_df['TargetPrice'] = \
         info_array[:, 0], \
         info_array[:, 1], \
         info_array[:, 2], \
         info_array[:, 3],\
-        info_array[:, 4]
+        info_array[:, 4], \
+        info_array[:, 5]
 
     print(symbols_df)
     return symbols_df
@@ -458,6 +463,10 @@ def get_title(ticker, df):
 
 def display_chart(ticker, df):
     close_price, last_date, prev_close_price = get_last_price(df)
+    # zoom_df = df.iloc['Date' >= start_date]
+    zoom_df = df[df.Date >= six_months.strftime("%Y-%m-%d")]
+    y_zoom_max = zoom_df["High"].max()
+    y_zoom_min = zoom_df["Low"].min()
 
     fig = go.Figure(go.Scatter(
         x=df["Date"],
@@ -471,12 +480,6 @@ def display_chart(ticker, df):
         'plot_bgcolor': 'rgba(0, 0, 0, 0)',
         'paper_bgcolor': 'rgba(0, 0, 0, 0)',
     })
-
-    # zoom_df = df.iloc['Date' >= start_date]
-
-    zoom_df = df[df.Date >= twelve_months.strftime("%Y-%m-%d")]
-    y_zoom_max = zoom_df["High"].max()
-    y_zoom_min = zoom_df["Low"].min()
 
     fig.update_layout(
         autosize=True,
@@ -617,6 +620,9 @@ def display_chart(ticker, df):
             name='Crash $' + str(crash_level)
         ))
 
+    fig.update_xaxes(showline=True, linewidth=1, linecolor='#ccc', mirror=True)
+    fig.update_yaxes(showline=True, linewidth=1, linecolor='#ccc', mirror=True)
+
     fig.update_layout(xaxis_rangeslider_visible=False)
     #    fig.update_xaxes(type="date", range=[start_date, end_date])
     fig.update_yaxes(range=[y_zoom_min, y_zoom_max])
@@ -636,9 +642,16 @@ def get_predictions(symbol):
 
 def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_prediction_df):
     levels, close_price, min_level, max_level = calculate_levels(df)
+
+    zoom_df = df[df.Date >= twelve_months.strftime("%Y-%m-%d")]
+
+    zoom_df1 = df[df.Date >= six_months.strftime("%Y-%m-%d")]
+    y_zoom_max = zoom_df1["High"].max()
+    y_zoom_min = zoom_df1["Low"].min() * 0.9
+
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
                         vertical_spacing=0.012,
-                        row_heights=[0.60, 0.10, 0.30],
+                        row_heights=[0.70, 0.10, 0.20],
                         specs=[
                             [{"type": "candlestick"}],
                             [{"type": "bar"}],
@@ -650,18 +663,16 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
         'paper_bgcolor': 'rgba(0, 0, 0, 0)',
     })
 
-    fig.add_trace(go.Candlestick(x=df['Date'],
-                                 open=df['Open'],
-                                 high=df['High'],
-                                 low=df['Low'],
-                                 close=df['Close'],
+    fig.update_xaxes(showline=True, linewidth=1, linecolor='#ccc', mirror=True)
+    fig.update_yaxes(showline=True, linewidth=1, linecolor='#ccc', mirror=True)
+
+    fig.add_trace(go.Candlestick(x=zoom_df['Date'],
+                                 open=zoom_df['Open'],
+                                 high=zoom_df['High'],
+                                 low=zoom_df['Low'],
+                                 close=zoom_df['Close'],
                                  name=symbol + " $" + str(close_price),
                                  showlegend=True), row=1, col=1)
-    # zoom_df = df.iloc['Date' >= start_date]
-
-    zoom_df = df[df.Date >= start_date]
-    y_zoom_max = zoom_df["High"].max() * 1.05
-    y_zoom_min = zoom_df["Low"].min() * 0.95
 
     fig.update_layout(
         autosize=True,
@@ -669,10 +680,10 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
         height=800,
         font={"family": "Raleway", "size": 10},
         margin={
-            "r": 30,
+            "r": 10,
             "t": 10,
-            "b": 30,
-            "l": 30,
+            "b": 10,
+            "l": 10,
         },
         showlegend=True,
         dragmode='pan',
@@ -681,7 +692,7 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
             "size": 10,
         },
         xaxis={
-            #            "autorange": True,
+            # "autorange": True,
             # "range": [
             #     start_date,
             #     end_date
@@ -723,41 +734,41 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
             "type": "date",
             "zeroline": True
         },
-        # yaxis={
-        #     "autorange": True,
+         yaxis={
+        #    "autorange": True,
         #     "showline": True,
         #     "type": "linear",
         #     "zeroline": False,
-        # }
+            }
     )
 
     # add moving average traces
-    fig.add_trace(go.Scatter(x=df['Date'],
-                             y=df['MA20'],
+    fig.add_trace(go.Scatter(x=zoom_df['Date'],
+                             y=zoom_df['MA20'],
                              line=dict(color='lightgreen', width=2),
                              fill=None,
                              mode='lines',
                              name='MA 20'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df['Date'],
-                             y=df['EMA21'],
+    fig.add_trace(go.Scatter(x=zoom_df['Date'],
+                             y=zoom_df['EMA21'],
                              fill='tonexty',
                              mode='lines',
                              line=dict(color='green', width=2),
                              name='EMA 21'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df['Date'],
-                             y=df['MA50'],
+    fig.add_trace(go.Scatter(x=zoom_df['Date'],
+                             y=zoom_df['MA50'],
                              line=dict(color='blue', width=2),
                              name='MA 50'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df['Date'],
-                             y=df['MA100'],
+    fig.add_trace(go.Scatter(x=zoom_df['Date'],
+                             y=zoom_df['MA100'],
                              line=dict(color='orange', width=2),
                              name='MA 100'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df['Date'],
-                             y=df['MA200'],
+    fig.add_trace(go.Scatter(x=zoom_df['Date'],
+                             y=zoom_df['MA200'],
                              line=dict(color='red', width=2),
                              name='MA 200'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df['Date'],
-                             y=df['MA300'],
+    fig.add_trace(go.Scatter(x=zoom_df['Date'],
+                             y=zoom_df['MA300'],
                              line=dict(color='black', width=2),
                              name='MA 300'), row=1, col=1)
 
@@ -789,7 +800,8 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
 
                 ath_diff = ath - current_level
                 ath_percent = (ath_diff / ath) * 100
-            if level <= (min_level * 0.99) or level >= (max_level * 0.99):
+
+            if level <= (min_level * 0.99) or level >= (max_level * 1.01):
                 line_color = 'rgba(100, 10, 100, 0.2)'
                 line_fill = None
                 line_width = 1
@@ -797,26 +809,26 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
                 line_color = 'rgba(51, 102, 153, 1)'
                 line_fill = None  # 'tonexty'
                 line_width = 2
-            fig.add_trace(go.Scatter(
-                x=[df['Date'].min(), df['Date'].max()],
-                y=[level, level],
-                mode="lines+text",
-                name="Levels",
-                fill=line_fill,
-                showlegend=False,
-                text=['', '$' + str(np.round(current_level, 1)) + ' (' + str(np.round(percent, 1)) + '% disc:' + str(
-                    np.round(ath_percent, 1)) + '%)', ''],
-                textposition="top right",
-                line=dict(shape='linear', color=line_color, dash='dash', width=line_width)
-            ), row=1, col=1)
+                fig.add_trace(go.Scatter(
+                    x=[df['Date'].min(), df['Date'].max()],
+                    y=[level, level],
+                    mode="lines+text",
+                    name="Levels",
+                    fill=line_fill,
+                    showlegend=False,
+                    text=['', '$' + str(np.round(current_level, 1)) + ' (' + str(np.round(percent, 1)) + '% disc:' + str(
+                        np.round(ath_percent, 1)) + '%)', ''],
+                    textposition="top right",
+                    line=dict(shape='linear', color=line_color, dash='dash', width=line_width)
+                ), row=1, col=1)
 
     # Volume
     colors = ['green' if row['Open'] - row['Close'] >= 0 else 'red' for index, row in df.iterrows()]
-    fig.add_trace(go.Bar(x=df['Date'], y=df['Volume'], marker_color=colors, name='Volume'), row=2, col=1)
+    fig.add_trace(go.Bar(x=zoom_df['Date'], y=zoom_df['Volume'], marker_color=colors, name='Volume'), row=2, col=1)
 
     # RSI
-    fig.add_trace(go.Scatter(x=df['Date'],
-                             y=df['RSI'],
+    fig.add_trace(go.Scatter(x=zoom_df['Date'],
+                             y=zoom_df['RSI'],
                              line=dict(color='royalblue', width=2),
                              name='RSI(14)'
                              ), row=3, col=1)
@@ -847,7 +859,7 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
         ), row=3, col=1)
 
     fig.add_trace(go.Scatter(
-        x=[np.min(df['Date']), np.max(df['Date'])],
+        x=[np.min(zoom_df['Date']), np.max(zoom_df['Date'])],
         y=[30, 30],
         mode="lines",
         line=dict(shape='linear', color='rgb(10, 120, 24)', dash='dash'),
@@ -855,7 +867,7 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
     ), row=3, col=1)
 
     fig.add_trace(go.Scatter(
-        x=[np.min(df['Date']), np.max(df['Date'])],
+        x=[np.min(zoom_df['Date']), np.max(zoom_df['Date'])],
         y=[50, 50],
         mode="lines",
         line=dict(shape='linear', color='rgb(10, 12, 240)', dash='dash'),
@@ -863,7 +875,7 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
     ), row=3, col=1)
 
     fig.add_trace(go.Scatter(
-        x=[np.min(df['Date']), np.max(df['Date'])],
+        x=[np.min(zoom_df['Date']), np.max(zoom_df['Date'])],
         y=[70, 70],
         mode="lines",
         line=dict(shape='linear', color='rgb(100, 10, 100)', dash='dash'),
