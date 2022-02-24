@@ -212,7 +212,7 @@ def get_stock_price(ticker, from_date):
     df['MA50'] = df['Close'].rolling(window=50).mean()
     df['MA100'] = df['Close'].rolling(window=100).mean()
     df['MA200'] = df['Close'].rolling(window=200).mean()
-    df['MA300'] = df['Close'].rolling(window=200).mean()
+    df['MA300'] = df['Close'].rolling(window=300).mean()
 
     macd, soch, rsi = indicators(df)
     df['RSI'] = rsi.rsi().to_numpy()
