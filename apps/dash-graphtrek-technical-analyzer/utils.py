@@ -16,6 +16,7 @@ import os.path
 import json
 from dash_iconify import DashIconify
 
+import time
 
 twelve_months = date.today() + relativedelta(months=-12)
 eleven_months = date.today() + relativedelta(months=-11)
@@ -214,11 +215,14 @@ def get_stock_price(ticker, from_date):
     df['MA200'] = df['Close'].rolling(window=200).mean()
     df['MA300'] = df['Close'].rolling(window=300).mean()
 
-    macd, soch, rsi = indicators(df)
+    rsi = RSIIndicator(close=df['Close'], window=14)
     df['RSI'] = rsi.rsi().to_numpy()
-    df['MACD_DIFF'] = macd.macd_diff().to_numpy()
-    df['MACD'] = macd.macd().to_numpy()
-    df['MACD_SIGNAL'] = macd.macd_signal().to_numpy()
+
+    # macd, soch, rsi = indicators(df)
+    # df['RSI'] = rsi.rsi().to_numpy()
+    # df['MACD_DIFF'] = macd.macd_diff().to_numpy()
+    # df['MACD'] = macd.macd().to_numpy()
+    # df['MACD_SIGNAL'] = macd.macd_signal().to_numpy()
     print('Get Stock Price', ticker.ticker, 'done.')
     return df
 
@@ -226,13 +230,19 @@ def get_stock_price(ticker, from_date):
 def get_stock_price1(ticker, from_date):
     file_path = '/home/nexys/graphtrek/stock/' + ticker.ticker + '.csv'
     file_exists = os.path.exists(file_path)
-    if file_exists is True:
+    if file_exists is True and not is_file_older_than(file_path, 300):
         df = pd.read_csv(file_path, parse_dates=['Date'])
         print('Get CACHED Stock Price', ticker.ticker, 'done.')
     else:
         df = get_stock_price(ticker, from_date)
-    df.to_csv(file_path, index=True)
+        df.to_csv(file_path, index=True)
     return df
+
+
+def is_file_older_than(file, secs=1):
+    file_time = os.path.getmtime(file)
+    # Check against 24 hours
+    return (time.time() - file_time) > secs
 
 
 def calculate_levels(chart_df):
@@ -434,7 +444,7 @@ def get_symbols_info_df(symbols):
         info_array[:, 4], \
         info_array[:, 5]
 
-    print(symbols_df)
+    # print(symbols_df)
     return symbols_df
 
 

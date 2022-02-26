@@ -10,6 +10,7 @@ from symbols import symbols
 from utils import (
     Header,
     get_stock_price,
+    get_stock_price1,
     get_title,
     display_chart,
     display_analyzer,
@@ -134,8 +135,8 @@ def display_value(symbol):
     if symbol is None:
         symbol = "TSLA"
     ticker = yf.Ticker(symbol)
-    df_vix_graph = get_stock_price(vix_ticker, "2021-01-01")
-    df_spy_graph = get_stock_price(spy_ticker, "2021-01-01")
+    df_vix_graph = get_stock_price1(vix_ticker, "2021-01-01")
+    df_spy_graph = get_stock_price1(spy_ticker, "2021-01-01")
     df_xxx_graph = get_stock_price(ticker, "2020-01-01")
 
     calls_class_name = "subtitle"
