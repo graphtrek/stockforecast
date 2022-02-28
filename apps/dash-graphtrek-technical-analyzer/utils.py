@@ -167,7 +167,7 @@ def is_support(df, i):
     cond2 = df['Low'][i] < df['Low'][i + 1]
     cond3 = df['Low'][i + 1] < df['Low'][i + 2]
     cond4 = df['Low'][i - 1] < df['Low'][i - 2]
-    return (cond1 and cond2 and cond3 and cond4)
+    return cond1 and cond2 and cond3 and cond4
 
 
 def is_resistance(df, i):
@@ -277,7 +277,7 @@ def calculate_levels(chart_df):
     if max_level < close_price:
         max_level = np.round(close_price, 1)
 
-    print('Calculate Levels close_price', close_price, 'min_level:', min_level, 'max_level:', max_level)
+    # print('Calculate Levels close_price', close_price, 'min_level:', min_level, 'max_level:', max_level)
     return levels, close_price, min_level, max_level
 
 
@@ -310,7 +310,7 @@ def find_level_option_interests(options_df, min_level, max_level, dte_min, dte_m
             "CALL == False" \
             " and strike>" + str(int(min_level)) + \
             " and strike<=" + str(int(max_level)) + \
-            " and dte>=" + str(dte_min) + \
+            " and dte>" + str(dte_min) + \
             " and dte<=" + str(dte_max)
         PUT_options_df = options_df.query(put_query)
 
@@ -322,7 +322,7 @@ def find_level_option_interests(options_df, min_level, max_level, dte_min, dte_m
             #    PUT_options_to_return_df = \
             #        PUT_options_to_return_df.append(PUT_options_df.loc[put_max_volume_index:put_max_volume_index])
             PUT_options_to_return_df.columns = new_header  # set the header row as the df header
-            print("PUT options found:", str(len(PUT_options_df)) + " query:", put_query)
+            # print("PUT options found:", str(len(PUT_options_df)) + " query:", put_query)
         else:
             print("No PUT options found query:", put_query)
             PUT_options_to_return_df = pd.DataFrame(columns=new_header)
@@ -343,7 +343,7 @@ def find_level_option_interests(options_df, min_level, max_level, dte_min, dte_m
             # if call_max_volume_index != call_max_openInterest_index:
             #    CALL_options_to_return_df = CALL_options_to_return_df.append(CALL_options_df.loc[call_max_volume_index:call_max_volume_index])
             CALL_options_to_return_df.columns = new_header  # set the header row as the df header
-            print("CALL options found:", str(len(CALL_options_df)) + " query:", call_query)
+            # print("CALL options found:", str(len(CALL_options_df)) + " query:", call_query)
         else:
             print("No CALL options found query:", put_query)
             CALL_options_to_return_df = pd.DataFrame(columns=new_header)
@@ -458,7 +458,7 @@ def get_last_price(df):
     return close_price, last_date, prev_close_price
 
 
-def get_title(ticker, df):
+def get_title(ticker, df, predict_price):
     close_price, last_date, prev_close_price = get_last_price(df)
 
     ath = np.round(float(df['Adj Close'].max()))
@@ -466,17 +466,28 @@ def get_title(ticker, df):
     discount_percent = np.round((discount / ath) * 100, 2)
 
     title = ticker.ticker + " " + last_date \
-            + " Last Price:$" + str(close_price) \
-            + " Discount:$" + str(discount) + " (" + str(discount_percent) + "%)"
+        + " Last Price:$" + str(close_price) \
+        + " ($" + str(predict_price) + " in 2 weeks)" \
+        + " Discount:$" + str(discount) + " (" + str(discount_percent) + "%)"
     return html.A(title, href='https://in.tradingview.com/chart?symbol=' + ticker.ticker, target="_blank")
+
+
+def get_predict_price(close_price, first_prediction, mean_prediction, max_level, min_level):
+    predict_price = np.round((close_price / first_prediction) * mean_prediction, 2)
+    if predict_price > max_level:
+        predict_price = max_level
+    if predict_price < min_level:
+        predict_price = min_level
+    print("predict_price:", predict_price)
+    return predict_price
 
 
 def display_chart(ticker, df):
     close_price, last_date, prev_close_price = get_last_price(df)
     # zoom_df = df.iloc['Date' >= start_date]
-    zoom_df = df[df.Date >= six_months.strftime("%Y-%m-%d")]
-    y_zoom_max = zoom_df["High"].max()
-    y_zoom_min = zoom_df["Low"].min()
+    # zoom_df = df[df.Date >= six_months.strftime("%Y-%m-%d")]
+    # y_zoom_max = zoom_df["High"].max()
+    # y_zoom_min = zoom_df["Low"].min()
 
     fig = go.Figure(go.Scatter(
         x=df["Date"],
@@ -575,7 +586,21 @@ def display_chart(ticker, df):
     ))
 
     if ticker.ticker == "^VIX":
-        fig.update_xaxes(type="date", range=[three_months, date.today()])
+        # fig.update_xaxes(type="date", range=[three_months, date.today()])
+        fig.update_xaxes(type="date",
+                         range=[three_months, date.today()],
+                         showline=True,
+                         linewidth=1,
+                         linecolor='#ccc',
+                         mirror=True,
+                         showgrid=True,
+                         gridwidth=1,
+                         gridcolor='LightPink',
+                         showspikes=True,
+                         spikemode='across',
+                         spikesnap='cursor',
+                         spikedash='dash')
+
         fig.add_trace(go.Scatter(
             x=[np.min(df['Date']), np.max(df['Date'])],
             y=[30, 30],
@@ -600,7 +625,21 @@ def display_chart(ticker, df):
             name='Hedge +$22.5'
         ))
     else:
-        fig.update_xaxes(type="date", range=[twelve_months, date.today()])
+        # fig.update_xaxes(type="date", range=[twelve_months, date.today()])
+        fig.update_xaxes(type="date",
+                         range=[twelve_months, date.today()],
+                         showline=True,
+                         linewidth=1,
+                         linecolor='#ccc',
+                         mirror=True,
+                         showgrid=True,
+                         gridwidth=1,
+                         gridcolor='LightPink',
+                         showspikes=True,
+                         spikemode='across',
+                         spikesnap='cursor',
+                         spikedash='dash')
+
         ath = np.round(float(df['Close'].max()))
         pullback_level = np.round((ath * 0.95), 1)
         correction_level = np.round((ath * 0.9), 1)
@@ -630,14 +669,13 @@ def display_chart(ticker, df):
             name='Crash $' + str(crash_level)
         ))
 
-    fig.update_xaxes(showline=True, linewidth=1, linecolor='#ccc', mirror=True)
-    fig.update_yaxes(showline=True, linewidth=1, linecolor='#ccc', mirror=True)
+    # fig.update_yaxes(showline=True, linewidth=1, linecolor='#ccc', mirror=True)
 
     fig.update_layout(xaxis_rangeslider_visible=False)
-    #    fig.update_xaxes(type="date", range=[start_date, end_date])
-    fig.update_yaxes(range=[y_zoom_min, y_zoom_max])
+    # fig.update_xaxes(type="date", range=[start_date, end_date])
+    # fig.update_yaxes(range=[y_zoom_min, y_zoom_max])
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='LightPink', showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')
-    fig.update_xaxes(showgrid=True,  gridwidth=1, gridcolor='LightPink', showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')
+    # fig.update_xaxes(showgrid=True,  gridwidth=1, gridcolor='LightPink', showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')
     return fig
 
 
@@ -787,7 +825,7 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
         y=[close_price, close_price],
         mode="lines+text",
         line=dict(shape='linear', color='rgb(10, 120, 24)', dash='dot'),
-        textfont=dict(size=12, color='black', family='Arial, sans-serif'),
+        textfont=dict(size=16, color='black', family='Arial, sans-serif'),
         name='Last Price:' + symbol + ' $' + str(close_price),
         showlegend=True,
         text=['', ' $' + str(close_price) + " (Last Price)", ''],
@@ -859,6 +897,20 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
         first_prediction = np.round(indicators_prediction_df['Prediction'][0])
         mean_prediction = np.round(np.mean(indicators_prediction_df['Prediction']))
         print("first_prediction:", first_prediction, "mean_prediction:", mean_prediction)
+        predict_price = get_predict_price(close_price,first_prediction,mean_prediction, max_level, min_level)
+
+        fig.add_trace(go.Scatter(
+            x=[np.min(df['Date']), np.max(df['Date'])],
+            y=[predict_price, predict_price],
+            mode="lines+text",
+            line=dict(shape='linear', color='crimson', dash='dot'),
+            textfont=dict(size=16, color='black', family='Arial, sans-serif'),
+            name='Predict Price:' + symbol + ' $' + str(predict_price),
+            showlegend=True,
+            text=['', ' $' + str(predict_price) + " (Predict Price)", ''],
+            textposition="top left"
+        ), row=1, col=1)
+
 
         fig.add_trace(go.Scatter(
             x=[np.min(indicators_prediction_df['Date']), np.max(indicators_prediction_df.head(14)['Date'])],

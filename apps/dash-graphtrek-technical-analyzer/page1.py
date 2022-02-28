@@ -11,6 +11,7 @@ from utils import (
     Header,
     get_stock_price,
     get_stock_price1,
+    get_predict_price,
     get_title,
     display_chart,
     display_analyzer,
@@ -246,10 +247,13 @@ def display_value(symbol):
 
     indicators_test_prediction_df, indicators_prediction_df = get_predictions(symbol)
 
+    predict_price = close_price
     predictions_bull = False
     if indicators_prediction_df is not None:
         first_prediction = indicators_prediction_df['Prediction'][0]
         mean_prediction = np.mean(indicators_prediction_df['Prediction'])
+
+        predict_price = get_predict_price(close_price,first_prediction,mean_prediction, max_level, min_level)
         if mean_prediction >= first_prediction:
             predictions_bull = True
 
@@ -257,7 +261,7 @@ def display_value(symbol):
         xxx_class_name = "subtitle_green"
     xxx_div = html.Div(
         [
-            html.H6([get_title(ticker, df_xxx_graph),
+            html.H6([get_title(ticker, df_xxx_graph, predict_price),
                      " ",
                      html.A("TradingView",
                             href='https://in.tradingview.com/chart?symbol=' + symbol,
