@@ -23,6 +23,7 @@ eleven_months = date.today() + relativedelta(months=-11)
 six_months = date.today() + relativedelta(months=-6)
 five_months = date.today() + relativedelta(months=-5)
 three_months = date.today() + relativedelta(months=-3)
+two_months = date.today() + relativedelta(months=-2)
 one_month = date.today() + relativedelta(months=+1)
 fourteen_days = date.today() + relativedelta(days=+14)
 start_date = six_months.strftime("%Y-%m-%d")
@@ -267,13 +268,13 @@ def calculate_levels(chart_df):
 
     levels = sorted(levels, reverse=True)
 
-    min_level_0 = np.round(find_nearest_less_than(close_price, levels), 1)
-    min_level = np.round(find_nearest_less_than(min_level_0 * 0.99, levels), 1)
+    min_level = np.round(find_nearest_less_than(close_price * 0.99, levels), 1)
+    # min_level = np.round(find_nearest_less_than(min_level_0 * 0.99, levels), 1)
     if min_level > close_price:
         min_level = np.round(close_price, 1)
 
-    max_level_0 = np.round(find_nearest_greater_than(close_price, levels), 1)
-    max_level = np.round(find_nearest_greater_than(max_level_0 * 1.01, levels), 1)
+    max_level = np.round(find_nearest_greater_than(close_price * 1.01, levels), 1)
+    # max_level = np.round(find_nearest_greater_than(max_level_0 * 1.01, levels), 1)
     if max_level < close_price:
         max_level = np.round(close_price, 1)
 
@@ -693,7 +694,7 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
 
     zoom_df = df[df.Date >= twelve_months.strftime("%Y-%m-%d")]
 
-    zoom_df1 = df[df.Date >= six_months.strftime("%Y-%m-%d")]
+    zoom_df1 = df[df.Date >= two_months.strftime("%Y-%m-%d")]
     y_zoom_max = zoom_df1["High"].max()
     y_zoom_min = zoom_df1["Low"].min() * 0.9
 

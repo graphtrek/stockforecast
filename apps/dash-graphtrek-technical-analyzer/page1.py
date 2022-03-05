@@ -278,7 +278,7 @@ def display_value(symbol):
             dcc.Graph(
                 id="graph-xxx",
                 figure=display_analyzer(symbol, df_xxx_graph, indicators_test_prediction_df, indicators_prediction_df),
-                config={"displayModeBar": False, "scrollZoom": False},
+                config={"displayModeBar": False, "scrollZoom": True},
             )
         ],
         className="ten columns")

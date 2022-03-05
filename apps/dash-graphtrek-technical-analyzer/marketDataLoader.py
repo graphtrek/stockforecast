@@ -7,6 +7,7 @@ from symbols import symbols
 import time
 import json
 
+from app import app
 
 def get_symbols_info():
     for symbol in symbols:
@@ -22,13 +23,13 @@ def get_symbols_info():
                 f.write(json_info_dict)
                 # close file
                 f.close()
-                print('Get info', ticker.ticker, 'done.')
+                app.logger.info('Get info %s %s', ticker.ticker, 'done.')
             except Exception as e:
-                print('Get info', ticker.ticker, 'error.', e)
+                app.logger.info('Get info %s %s', ticker.ticker, 'error.', e)
 
 
 def get_symbols_options_chain():
-    print("get_symbols_info_df running")
+    app.logger.info("get_symbols_info_df running")
     for symbol in symbols:
         ticker = yf.Ticker(symbol)
         options_chain(ticker)
@@ -95,11 +96,11 @@ def options_chain(ticker):
             options['spread%'] = np.round(100 - ((options['bid'] / options['ask']) * 100), 1)
 
             options.to_csv("/home/nexys/graphtrek/stock/" + ticker.ticker + "_options.csv", index=False)
-            print('Get options', ticker.ticker, 'done.')
+            app.logger.info('Get options %s %s', ticker.ticker, 'done.')
         else:
-            print('Get options', ticker.ticker, 'blank.')
+            app.logger.info('Get options %s %s', ticker.ticker, 'blank.')
     except e:
-        print('Get options', ticker.ticker, 'error.', e)
+        app.logger.info('Get options %s %s %s', ticker.ticker, 'error.', e)
     return None
 
 
@@ -110,7 +111,7 @@ def schedule_options():
         time.sleep(1)
 
 
-get_symbols_info()
+#get_symbols_info()
 
 
 # ticker = yf.Ticker("TQQQ")
