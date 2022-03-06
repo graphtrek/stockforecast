@@ -6,8 +6,8 @@ from datetime import datetime
 from symbols import symbols
 import time
 import json
-
 from app import app
+
 
 def get_symbols_info():
     for symbol in symbols:
