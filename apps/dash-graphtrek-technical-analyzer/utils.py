@@ -698,7 +698,7 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
 
     zoom_df1 = df[df.Date >= two_months.strftime("%Y-%m-%d")]
     y_zoom_max = zoom_df1["High"].max()
-    y_zoom_min = zoom_df1["Low"].min() * 0.9
+    y_zoom_min = zoom_df1["Low"].min() * 0.999
 
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
                         vertical_spacing=0.012,
