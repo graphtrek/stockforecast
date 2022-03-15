@@ -5,6 +5,10 @@ import yfinance as yf
 from ta.trend import MACD
 from ta.momentum import StochasticOscillator
 from ta.momentum import RSIIndicator
+from ta.trend import ADXIndicator
+
+
+
 import numpy as np
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
@@ -211,6 +215,9 @@ def get_stock_price(ticker, from_date):
     # df = df.loc[:,['Date', 'Open', 'High', 'Low', 'Close']]
     df['EMA21'] = df['Close'].ewm(span=21, adjust=False).mean()
     df['MA20'] = df['Close'].rolling(window=20).mean()
+    df['MA5'] = df['Close'].rolling(window=5).mean()
+    df['EMA14'] = df['Close'].ewm(span=14, adjust=False).mean()
+
     df['MA50'] = df['Close'].rolling(window=50).mean()
     df['MA100'] = df['Close'].rolling(window=100).mean()
     df['MA200'] = df['Close'].rolling(window=200).mean()
@@ -219,6 +226,8 @@ def get_stock_price(ticker, from_date):
     rsi = RSIIndicator(close=df['Close'], window=14)
     df['RSI'] = rsi.rsi().to_numpy()
 
+    adx = ADXIndicator(high=df['High'], low=df['Low'], close=df['Close'], window=14)
+    df['ADX'] = adx.adx().to_numpy()
     # macd, soch, rsi = indicators(df)
     # df['RSI'] = rsi.rsi().to_numpy()
     # df['MACD_DIFF'] = macd.macd_diff().to_numpy()
@@ -405,7 +414,8 @@ def get_symbols_info_df(symbols):
                 if 'targetMedianPrice' in ticker_info:
                     target_price = str(ticker_info['targetMedianPrice'])
 
-        info_list.append([ticker_sector, ticker_industry, ticker_short_ratio, recommendation_key, short_name, target_price])
+        info_list.append(
+            [ticker_sector, ticker_industry, ticker_short_ratio, recommendation_key, short_name, target_price])
 
         earning_date_str = ""
         nr_of_days = None
@@ -434,15 +444,15 @@ def get_symbols_info_df(symbols):
     info_array = np.array(info_list)
 
     symbols_df['Sector'], \
-        symbols_df['Industry'],\
-        symbols_df['ShortRatio'], \
-        symbols_df['Recommendation'], \
-        symbols_df['Name'], \
-        symbols_df['TargetPrice'] = \
+    symbols_df['Industry'], \
+    symbols_df['ShortRatio'], \
+    symbols_df['Recommendation'], \
+    symbols_df['Name'], \
+    symbols_df['TargetPrice'] = \
         info_array[:, 0], \
         info_array[:, 1], \
         info_array[:, 2], \
-        info_array[:, 3],\
+        info_array[:, 3], \
         info_array[:, 4], \
         info_array[:, 5]
 
@@ -468,20 +478,29 @@ def get_title(ticker, df, predict_price):
     discount_percent = np.round((discount / ath) * 100, 2)
 
     title = ticker.ticker + " " + last_date \
-        + " Last Price:$" + str(close_price) \
-        + " ($" + str(predict_price) + " in 2 weeks)" \
-        + " Discount:$" + str(discount) + " (" + str(discount_percent) + "%)"
+            + " Last Price:$" + str(close_price) \
+            + " ($" + str(predict_price) + " in 2 weeks)" \
+            + " Discount:$" + str(discount) + " (" + str(discount_percent) + "%)"
     return html.A(title, href='https://in.tradingview.com/chart?symbol=' + ticker.ticker, target="_blank")
 
 
-def get_predict_price(close_price, first_prediction, mean_prediction, max_level, min_level):
+def get_predict_price(df, indicators_prediction_df, max_level, min_level):
+    first_prediction = indicators_prediction_df['Prediction'][0]
+    mean_prediction = np.mean(indicators_prediction_df['Prediction'])
+
+    first_prediction_date = indicators_prediction_df['Date'][0]
+    # Filter data between two dates
+    filtered_df = df.loc[(df['Date'] >= first_prediction_date)]
+    close_price = filtered_df['Close'][0]
+
     predict_price = np.round((close_price / first_prediction) * mean_prediction, 2)
+    app.logger.info("predict_price: %s close_price: %s", predict_price, close_price)
     if predict_price > max_level:
-        predict_price = max_level
+        predict_price = np.round(max_level * 1.01, 2)
     if predict_price < min_level:
-        predict_price = min_level
-    app.logger.info("predict_price: %s", predict_price)
-    return predict_price
+        predict_price = np.round(min_level * 0.98, 2)
+    app.logger.info("corrected predict_price: %s close_price: %s", predict_price, close_price)
+    return predict_price, first_prediction, mean_prediction
 
 
 def display_chart(ticker, df):
@@ -528,7 +547,7 @@ def display_chart(ticker, df):
             # "range": [
             #    range_start_date,
             #    range_end_date
-            #],
+            # ],
             "rangeselector": {
                 "buttons": [
                     {
@@ -677,7 +696,8 @@ def display_chart(ticker, df):
     fig.update_layout(xaxis_rangeslider_visible=False)
     # fig.update_xaxes(type="date", range=[range_start_date, range_end_date])
     # fig.update_yaxes(range=[y_zoom_min, y_zoom_max])
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='LightPink', showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='LightPink', showspikes=True, spikemode='across',
+                     spikesnap='cursor', spikedash='dash')
     # fig.update_xaxes(showgrid=True,  gridwidth=1, gridcolor='LightPink', showspikes=True, spikemode='across', spikesnap='cursor', spikedash='dash')
     return fig
 
@@ -698,14 +718,15 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
 
     zoom_df1 = df[df.Date >= two_months.strftime("%Y-%m-%d")]
     y_zoom_max = zoom_df1["High"].max()
-    y_zoom_min = zoom_df1["Low"].min() * 0.999
+    y_zoom_min = zoom_df1["Low"].min() * 0.95
 
-    fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
+    fig = make_subplots(rows=4, cols=1, shared_xaxes=True,
                         vertical_spacing=0.012,
-                        row_heights=[0.70, 0.10, 0.20],
+                        row_heights=[0.60, 0.10, 0.20, 0.10],
                         specs=[
-                            [{"type": "candlestick"}],
+                            [{"type": "scatter"}],
                             [{"type": "bar"}],
+                            [{"type": "scatter"}],
                             [{"type": "scatter"}]
                         ])
 
@@ -717,18 +738,26 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
     fig.update_xaxes(showline=True, linewidth=1, linecolor='#ccc', mirror=True)
     fig.update_yaxes(showline=True, linewidth=1, linecolor='#ccc', mirror=True)
 
-    fig.add_trace(go.Candlestick(x=zoom_df['Date'],
-                                 open=zoom_df['Open'],
-                                 high=zoom_df['High'],
-                                 low=zoom_df['Low'],
-                                 close=zoom_df['Close'],
-                                 name=symbol + " $" + str(close_price),
-                                 showlegend=True), row=1, col=1)
+    fig.add_trace(go.Scatter(
+        x=zoom_df["Date"],
+        y=zoom_df["Close"],
+        line={"color": "#97151c"},
+        mode="lines+markers",
+        name=symbol + " $" + str(close_price)
+    ), row=1, col=1)
+
+    # fig.add_trace(go.Candlestick(x=zoom_df['Date'],
+    #                              open=zoom_df['Open'],
+    #                              high=zoom_df['High'],
+    #                              low=zoom_df['Low'],
+    #                              close=zoom_df['Close'],
+    #                              name=symbol + " $" + str(close_price),
+    #                              showlegend=True), row=1, col=1)
 
     fig.update_layout(
         autosize=True,
         #        width=700,
-        height=800,
+        height=600,
         font={"family": "Raleway", "size": 10},
         margin={
             "r": 10,
@@ -785,27 +814,27 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
             "type": "date",
             "zeroline": True
         },
-         yaxis={
-        #    "autorange": True,
-        #     "showline": True,
-        #     "type": "linear",
-        #     "zeroline": False,
-            }
+        yaxis={
+            #    "autorange": True,
+            #     "showline": True,
+            #     "type": "linear",
+            #     "zeroline": False,
+        }
     )
 
     # add moving average traces
     fig.add_trace(go.Scatter(x=zoom_df['Date'],
-                             y=zoom_df['MA20'],
+                             y=zoom_df['MA5'],
                              line=dict(color='lightgreen', width=2),
                              fill=None,
                              mode='lines',
-                             name='MA 20'), row=1, col=1)
+                             name='MA 5'), row=1, col=1)
     fig.add_trace(go.Scatter(x=zoom_df['Date'],
-                             y=zoom_df['EMA21'],
+                             y=zoom_df['EMA14'],
                              fill='tonexty',
                              mode='lines',
                              line=dict(color='green', width=2),
-                             name='EMA 21'), row=1, col=1)
+                             name='EMA 14'), row=1, col=1)
     fig.add_trace(go.Scatter(x=zoom_df['Date'],
                              y=zoom_df['MA50'],
                              line=dict(color='blue', width=2),
@@ -867,8 +896,9 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
                     name="Levels",
                     fill=line_fill,
                     showlegend=False,
-                    text=['', '$' + str(np.round(current_level, 1)) + ' (' + str(np.round(percent, 1)) + '% disc:' + str(
-                        np.round(ath_percent, 1)) + '%)', ''],
+                    text=['',
+                          '$' + str(np.round(current_level, 1)) + ' (' + str(np.round(percent, 1)) + '% disc:' + str(
+                              np.round(ath_percent, 1)) + '%)', ''],
                     textposition="top right",
                     line=dict(shape='linear', color=line_color, dash='dash', width=line_width)
                 ), row=1, col=1)
@@ -896,11 +926,9 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
                                  line=dict(color='firebrick', width=3, dash='dot'),
                                  name='RSI(14) Future Predict'
                                  ), row=3, col=1)
+        predict_price, first_prediction, mean_prediction = get_predict_price(df, indicators_prediction_df, max_level, min_level)
 
-        first_prediction = np.round(indicators_prediction_df['Prediction'][0])
-        mean_prediction = np.round(np.mean(indicators_prediction_df['Prediction']))
         app.logger.info("first_prediction: %s %s %s", first_prediction, "mean_prediction:", mean_prediction)
-        predict_price = get_predict_price(close_price,first_prediction,mean_prediction, max_level, min_level)
 
         fig.add_trace(go.Scatter(
             x=[np.min(df['Date']), np.max(df['Date'])],
@@ -913,7 +941,6 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
             text=['', ' $' + str(predict_price) + " (Predict Price)", ''],
             textposition="top left"
         ), row=1, col=1)
-
 
         fig.add_trace(go.Scatter(
             x=[np.min(indicators_prediction_df['Date']), np.max(indicators_prediction_df.head(14)['Date'])],
@@ -946,6 +973,29 @@ def display_analyzer(symbol, df, indicators_test_prediction_df, indicators_predi
         line=dict(shape='linear', color='rgb(100, 10, 100)', dash='dash'),
         name='RSI(14) Over Bought'
     ), row=3, col=1)
+
+    # ADX
+    fig.add_trace(go.Scatter(x=zoom_df['Date'],
+                             y=zoom_df['ADX'],
+                             line=dict(color='#a83232', width=2),
+                             name='ADX(14)'
+                             ), row=4, col=1)
+
+    fig.add_trace(go.Scatter(
+        x=[np.min(zoom_df['Date']), np.max(zoom_df['Date'])],
+        y=[20, 20],
+        mode="lines",
+        line=dict(shape='linear', color='gray', dash='dash'),
+        name='ADX(14) Week Trend'
+    ), row=4, col=1)
+
+    fig.add_trace(go.Scatter(
+        x=[np.min(zoom_df['Date']), np.max(zoom_df['Date'])],
+        y=[40, 40],
+        mode="lines",
+        line=dict(shape='linear', color='gray', dash='dash'),
+        name='ADX(14) Strong Trend'
+    ), row=4, col=1)
 
     fig.update_layout(xaxis_rangeslider_visible=False)
     fig.update_xaxes(type="date", range=[start_date, end_date])

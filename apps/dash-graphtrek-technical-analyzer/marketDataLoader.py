@@ -111,11 +111,11 @@ def schedule_options():
         time.sleep(1)
 
 
-#get_symbols_info()
+get_symbols_info()
 
 
 # ticker = yf.Ticker("TQQQ")
 # options_chain(ticker)
 
 
-schedule_options()
+#schedule_options()

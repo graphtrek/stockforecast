@@ -173,14 +173,14 @@ def display_value(symbol):
     mid_put_options_df, mid_call_options_df = \
         find_level_option_interests(options_df, min_level, max_level, 45, 76)
 
-    far_put_options_df, far_call_options_df = \
-        find_level_option_interests(options_df, min_level, max_level, 76, 120)
+    # far_put_options_df, far_call_options_df = \
+    #     find_level_option_interests(options_df, min_level, max_level, 76, 120)
 
     sum_call_options = 0
     call_options_df = call_options_df.append(wheel_call_options_df)
     call_options_df = call_options_df.append(near_call_options_df)
     call_options_df = call_options_df.append(mid_call_options_df)
-    call_options_df = call_options_df.append(far_call_options_df)
+    # call_options_df = call_options_df.append(far_call_options_df)
     if len(call_options_df) > 0:
         call_options_df = call_options_df.sort_values(by=['dte'])
         sum_call_options = int(sum(call_options_df[['openInterest', 'volume']].sum(axis=1)))
@@ -191,7 +191,7 @@ def display_value(symbol):
     put_options_df = put_options_df.append(wheel_put_options_df)
     put_options_df = put_options_df.append(near_put_options_df)
     put_options_df = put_options_df.append(mid_put_options_df)
-    put_options_df = put_options_df.append(far_put_options_df)
+    # put_options_df = put_options_df.append(far_put_options_df)
     if len(put_options_df) > 0:
         put_options_df = put_options_df.sort_values(by=['dte'])
         sum_put_options = int(sum(put_options_df[['openInterest', 'volume']].sum(axis=1)))
@@ -250,15 +250,14 @@ def display_value(symbol):
     predict_price = close_price
     predictions_bull = False
     if indicators_prediction_df is not None:
-        first_prediction = indicators_prediction_df['Prediction'][0]
-        mean_prediction = np.mean(indicators_prediction_df['Prediction'])
-
-        predict_price = get_predict_price(close_price,first_prediction,mean_prediction, max_level, min_level)
+        predict_price, first_prediction, mean_prediction = \
+            get_predict_price(df_xxx_graph, indicators_prediction_df, max_level, min_level)
         if mean_prediction >= first_prediction:
             predictions_bull = True
 
     if puts_bull and calls_bull and predictions_bull:
         xxx_class_name = "subtitle_green"
+
     xxx_div = html.Div(
         [
             html.H6([get_title(ticker, df_xxx_graph, predict_price),
